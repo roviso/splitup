@@ -1,0 +1,9 @@
+# Local dev database only. Production uses docker-compose.yml.
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment: { POSTGRES_USER: splitup, POSTGRES_PASSWORD: splitup, POSTGRES_DB: splitup }
+    ports: ["5544:5432"]
+    volumes: [devdb:/var/lib/postgresql/data]
+volumes: { devdb: {} }

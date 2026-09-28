@@ -1,0 +1,26 @@
+{
+  "name": "@splitup/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch --env-file-if-exists=../../.env --import tsx src/index.ts",
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --format=cjs --outfile=dist/index.cjs",
+    "db:generate": "drizzle-kit generate",
+    "seed": "node --import tsx src/seed-demo.ts"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "^8.0.2",
+    "drizzle-kit": "^0.31.11"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.1",
+    "drizzle-orm": "^0.45.3",
+    "hono": "^4.13.10",
+    "jose": "^6.2.12",
+    "nodemailer": "^10.0.12",
+    "postgres": "^3.4.9",
+    "@splitup/shared": "*",
+    "zod": "^4.1.0"
+  }
+}

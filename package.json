@@ -1,0 +1,23 @@
+{
+  "name": "split-up",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c blue,magenta \"npm run dev -w apps/api\" \"npm run dev -w apps/web\"",
+    "db": "docker compose -f docker-compose.dev.yml up -d",
+    "test": "tsx --test packages/shared/src/split.test.ts packages/shared/src/contacts.test.ts",
+    "typecheck": "tsc -p packages/shared && tsc -p apps/api && tsc -p apps/web",
+    "build": "npm run build -w apps/web && npm run build -w apps/api"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "concurrently": "^9.2.4",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

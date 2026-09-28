@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+/* Lokta-paper light theme, ink + marigold (sayapatri). Owe = sindoor, owed = leaf. */
+:root {
+  --bg: #fbf7f0;
+  --surface: #ffffff;
+  --surface-2: #f4eee3;
+  --line: #e8dfd0;
+  --ink: #1b1a17;
+  --muted: #7a7266;
+  --marigold: #f2a007;
+  --marigold-soft: #fdf0d3;
+  --owed: #1f8a5b;
+  --owed-soft: #e3f3ea;
+  --owe: #d9480f;
+  --owe-soft: #fce9df;
+  --on-ink: #fbf7f0;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #131210;
+    --surface: #1c1a17;
+    --surface-2: #26231f;
+    --line: #34302a;
+    --ink: #f3eee6;
+    --muted: #a39b8f;
+    --marigold: #ffb627;
+    --marigold-soft: #3a2c10;
+    --owed: #4cc38a;
+    --owed-soft: #15291f;
+    --owe: #ff7a45;
+    --owe-soft: #33190f;
+    --on-ink: #131210;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-marigold: var(--marigold);
+  --color-marigold-soft: var(--marigold-soft);
+  --color-owed: var(--owed);
+  --color-owed-soft: var(--owed-soft);
+  --color-owe: var(--owe);
+  --color-owe-soft: var(--owe-soft);
+  --color-on-ink: var(--on-ink);
+  --font-display: "Bricolage Grotesque", "Anek Devanagari", system-ui, sans-serif;
+  --font-sans: "Figtree", "Anek Devanagari", system-ui, sans-serif;
+}
+
+html { -webkit-tap-highlight-color: transparent; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "tnum" 1;
+  min-height: 100dvh;
+}
+/* faint paper grain */
+body::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .35;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .45 0 0 0 0 .35 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+#root { position: relative; z-index: 1; }
+
+/* Dhaka textile strip — the signature detail */
+.dhaka {
+  height: 10px;
+  background:
+    linear-gradient(135deg, var(--owe) 25%, transparent 25%) 0 0 / 20px 20px,
+    linear-gradient(225deg, var(--owe) 25%, transparent 25%) 0 0 / 20px 20px,
+    linear-gradient(45deg, var(--marigold) 25%, transparent 25%) 10px 0 / 20px 20px,
+    linear-gradient(315deg, var(--marigold) 25%, transparent 25%) 10px 0 / 20px 20px,
+    var(--ink);
+}
+
+/* receipt perforation */
+.receipt { position: relative; }
+.receipt::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -8px; height: 16px;
+  background: radial-gradient(circle at 8px 0, transparent 7px, var(--ink) 7.5px) 0 0 / 16px 16px repeat-x;
+  transform: scaleY(-1);
+}
+
+dialog { color: inherit; }
+dialog::backdrop { background: rgb(0 0 0 / .45); backdrop-filter: blur(2px); }
+dialog[open] { animation: rise .22s cubic-bezier(.2,.8,.2,1); }
+@keyframes rise { from { transform: translateY(24px); opacity: 0; } }
+
+.stagger > * { animation: fade .35s both cubic-bezier(.2,.8,.2,1); }
+.stagger > *:nth-child(2) { animation-delay: .04s; }
+.stagger > *:nth-child(3) { animation-delay: .08s; }
+.stagger > *:nth-child(4) { animation-delay: .12s; }
+.stagger > *:nth-child(5) { animation-delay: .16s; }
+.stagger > *:nth-child(n+6) { animation-delay: .2s; }
+@keyframes fade { from { transform: translateY(8px); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+input[type="number"] { -moz-appearance: textfield; }
+:focus-visible { outline: 2px solid var(--marigold); outline-offset: 2px; }
