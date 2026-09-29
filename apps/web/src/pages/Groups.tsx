@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { GROUP_TYPES } from '@splitup/shared';
@@ -41,12 +41,12 @@ export default function Groups() {
         <Empty icon="🏔️" title={t('No groups yet')} text={t('Groups keep trips, flats and regular hangouts tidy.')}
           action={<Button variant="marigold" onClick={() => setParams({ new: '1' })}>{t('Create a group')}</Button>} />
       )}
-      <NewGroup open={creating} onClose={() => setParams({})} />
+      <NewGroup open={creating} withId={params.get('with')} onClose={() => setParams({})} />
     </div>
   );
 }
 
-function NewGroup({ open, onClose }: { open: boolean; onClose: () => void }) {
+function NewGroup({ open, withId, onClose }: { open: boolean; withId: string | null; onClose: () => void }) {
   const t = useT();
   const nav = useNavigate();
   const [name, setName] = useState('');
@@ -54,6 +54,8 @@ function NewGroup({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [members, setMembers] = useState<string[]>([]);
   const [simplify, setSimplify] = useState(true);
   const [busy, setBusy] = useState(false);
+  // "Start a group together" from a friend's page or the celebration arrives with them pre-picked.
+  useEffect(() => { if (open && withId) setMembers((m) => (m.includes(withId) ? m : [...m, withId])); }, [open, withId]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();

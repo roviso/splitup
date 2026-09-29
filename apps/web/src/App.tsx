@@ -13,10 +13,12 @@ import Friends from './pages/Friends';
 import Friend from './pages/Friend';
 import Activity from './pages/Activity';
 import Account from './pages/Account';
-import { Invite, Join } from './pages/Join';
+import { AddByCode, Invite, Join } from './pages/Join';
 import ExpenseForm from './components/ExpenseForm';
 import SettleUp from './components/SettleUp';
 import ExpenseDetail from './components/ExpenseDetail';
+import { Banners, Celebrate, LivePill, Unread } from './components/Notices';
+import { useLive } from './live';
 
 export function Logo({ className }: { className?: string }) {
   return (
@@ -37,6 +39,7 @@ const NAV = [
 export default function App() {
   const me = useMeQuery();
   const t = useT();
+  useLive(!!me.data);
   useEffect(() => {
     if (me.data) setPrefs({ lang: me.data.locale, cal: me.data.calendar });
   }, [me.data?.locale, me.data?.calendar]);
@@ -65,10 +68,11 @@ export default function App() {
           <Logo />
           <Button variant="marigold" onClick={() => openExpense({})}><Plus size={18} /> {t('Add expense')}</Button>
           <nav className="flex flex-col gap-1">
-            {NAV.map((n) => <NavLink key={n.to} to={n.to} end={n.to === '/'} className={link}><n.icon size={19} /> {t(n.label)}</NavLink>)}
+            {NAV.map((n) => <NavLink key={n.to} to={n.to} end={n.to === '/'} className={link}><n.icon size={19} /> {t(n.label)}{n.to === '/activity' && <Unread className="ml-auto" />}</NavLink>)}
             <NavLink to="/account" className={link}><Settings size={19} /> {t('Account')}</NavLink>
           </nav>
-          <Link to="/account" className="mt-auto flex items-center gap-3 rounded-2xl p-2 hover:bg-surface-2">
+          <LivePill className="mt-auto" />
+          <Link to="/account" className="flex items-center gap-3 rounded-2xl p-2 hover:bg-surface-2">
             <Avatar id={me.data.id} name={me.data.name} size={36} />
             <span className="min-w-0">
               <span className="block truncate font-semibold">{me.data.name}</span>
@@ -89,6 +93,7 @@ export default function App() {
           <Route path="/account" element={<Account />} />
           <Route path="/join/:code" element={<Join />} />
           <Route path="/invite/:token" element={<Invite />} />
+          <Route path="/add/:code" element={<AddByCode />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
@@ -108,6 +113,8 @@ export default function App() {
       <ExpenseForm />
       <SettleUp />
       <ExpenseDetail />
+      <Celebrate />
+      <Banners />
       <Toasts />
     </div>
   );
@@ -115,7 +122,8 @@ export default function App() {
 
 function Tab({ to, label, icon: Icon }: (typeof NAV)[number]) {
   return (
-    <NavLink to={to} end={to === '/'} className={({ isActive }) => cx('flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold', isActive ? 'text-ink' : 'text-muted')}>
+    <NavLink to={to} end={to === '/'} className={({ isActive }) => cx('relative flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold', isActive ? 'text-ink' : 'text-muted')}>
+      {to === '/activity' && <Unread className="absolute left-1/2 top-1 ml-1.5" />}
       <Icon size={22} />
       {label}
     </NavLink>

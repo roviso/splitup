@@ -101,6 +101,40 @@ dialog[open] { animation: rise .22s cubic-bezier(.2,.8,.2,1); }
 .stagger > *:nth-child(n+6) { animation-delay: .2s; }
 @keyframes fade { from { transform: translateY(8px); opacity: 0; } }
 
+/* QR viewfinder: marigold corner brackets + sweeping line */
+.scanner-frame > span { position: absolute; width: 28px; height: 28px; border: 4px solid var(--marigold); }
+.scanner-frame > span:nth-child(1) { top: 0; left: 0; border-right: 0; border-bottom: 0; border-top-left-radius: 14px; }
+.scanner-frame > span:nth-child(2) { top: 0; right: 0; border-left: 0; border-bottom: 0; border-top-right-radius: 14px; }
+.scanner-frame > span:nth-child(3) { bottom: 0; left: 0; border-right: 0; border-top: 0; border-bottom-left-radius: 14px; }
+.scanner-frame > span:nth-child(4) { bottom: 0; right: 0; border-left: 0; border-top: 0; border-bottom-right-radius: 14px; }
+.scanner-line {
+  position: absolute; left: 6%; right: 6%; height: 2px; border-radius: 2px; top: 0;
+  background: var(--marigold); box-shadow: 0 0 14px 3px rgb(242 160 7 / .7);
+  animation: sweep 2.2s ease-in-out infinite alternate;
+}
+@keyframes sweep { to { top: 100%; } }
+
+/* "You're friends now": two avatars fly in and bump */
+.meet-l { animation: meet-l .7s cubic-bezier(.3,1.6,.5,1) both; }
+.meet-r { animation: meet-r .7s cubic-bezier(.3,1.6,.5,1) both; }
+.meet-heart { animation: pop .45s .55s cubic-bezier(.3,1.8,.5,1) both; }
+@keyframes meet-l { from { transform: translateX(-90px) rotate(-20deg); opacity: 0; } }
+@keyframes meet-r { from { transform: translateX(90px) rotate(20deg); opacity: 0; } }
+@keyframes pop { from { transform: scale(0); } }
+
+/* live-sync dot */
+.live-dot { position: relative; display: inline-block; width: 8px; height: 8px; border-radius: 99px; background: var(--owed); }
+.live-dot::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: inherit; animation: ping 1.8s cubic-bezier(0,0,.2,1) infinite; }
+@keyframes ping { 75%, 100% { transform: scale(2.6); opacity: 0; } }
+
+/* notification banner */
+@keyframes drop { from { transform: translateY(-120%); opacity: 0; } }
+
+/* my-code card: marigold shimmer around the QR */
+.code-glow { background: conic-gradient(from var(--a, 0deg), var(--marigold), var(--owe), var(--marigold), #fff3, var(--marigold)); animation: spin-a 6s linear infinite; }
+@property --a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@keyframes spin-a { to { --a: 360deg; } }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }

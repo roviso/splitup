@@ -3,7 +3,7 @@ import { CATEGORIES } from '@splitup/shared';
 import { api, myNet, refresh, type Expense, type Person, type Settlement } from '../api';
 import { date, money, month, usePrefs, useT } from '../i18n';
 import { openDetail, usePeople } from '../store';
-import { cx, toast, toastError } from '../ui';
+import { Button, cx, toast, toastError } from '../ui';
 
 export const METHOD_LABEL: Record<string, string> = { cash: 'Cash', esewa: 'eSewa', khalti: 'Khalti', fonepay: 'Fonepay', bank: 'Bank', other: 'Other' };
 
@@ -48,7 +48,12 @@ export function ExpenseRow({ e, people }: { e: Expense; people: Person[] }) {
 export function SettlementRow({ s, people }: { s: Settlement; people: Person[] }) {
   const t = useT();
   const { lang } = usePrefs();
-  const { name, obj } = usePeople(people);
+  const { name, obj, get, me } = usePeople(people);
+  const confirmGot = async () => {
+    try { await api(`/settlements/${s.id}/confirm`, {}); await refresh(); toast(t('Marked as received ✓')); } catch (e) { toastError(e); }
+  };
+  // Only a registered receiver can tick it off; placeholders never will.
+  const receiverReal = s.toUser === me.id || !!get(s.toUser)?.registered;
   const remove = async () => {
     if (!confirm(t('Delete this payment?'))) return;
     try { await api(`/settlements/${s.id}`, undefined, 'DELETE'); await refresh(); toast(t('Payment deleted')); } catch (e) { toastError(e); }
@@ -59,7 +64,12 @@ export function SettlementRow({ s, people }: { s: Settlement; people: Person[] }
       <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-owed-soft text-xl">💸</span>
       <span className="min-w-0 flex-1">
         <span className="block truncate font-semibold">{t('{from} paid {to}', { from: name(s.fromUser), to: obj(s.toUser) })}</span>
-        <span className="block truncate text-xs text-muted">{t(METHOD_LABEL[s.method] ?? s.method)}{s.note && ` · ${s.note}`}</span>
+        <span className="block truncate text-xs text-muted">
+          {t(METHOD_LABEL[s.method] ?? s.method)}{s.note && ` · ${s.note}`}
+          {s.confirmedAt ? <span className="font-semibold text-owed"> · {t('Received ✓')}</span>
+            : receiverReal && s.toUser !== me.id && <span> · {t('Waiting for {name} to confirm', { name: name(s.toUser) })}</span>}
+        </span>
+        {!s.confirmedAt && s.toUser === me.id && <Button size="sm" variant="soft" className="mt-1.5 text-owed" onClick={confirmGot}>{t('Got it ✓')}</Button>}
       </span>
       <span className="font-semibold text-owed">{money(s.amount, lang)}</span>
       <button onClick={remove} aria-label={t('Delete')} className="grid size-8 place-items-center rounded-full text-muted opacity-60 hover:bg-owe-soft hover:text-owe hover:opacity-100 cursor-pointer"><Trash2 size={15} /></button>

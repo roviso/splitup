@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, HandCoins, Plus, UserPlus, Users } from 'lucide-react';
+import { ArrowRight, Bell, HandCoins, Plus, ScanLine, UserPlus, Users } from 'lucide-react';
 import { useT, money, usePrefs } from '../i18n';
 import { useDash, useMe, openExpense, openSettle } from '../store';
 import { Avatar, Avatars, BalanceLine, Button, Card, Empty, Spinner, cx } from '../ui';
 import { byId } from '../api';
 import { LangSwitch } from './Login';
 import { GROUP_EMOJI } from './Groups';
+import { Unread } from '../components/Notices';
 
 export default function Home() {
   const t = useT();
@@ -28,6 +29,10 @@ export default function Home() {
         </div>
         <div className="flex items-center gap-2">
           <LangSwitch />
+          <Link to="/activity" className="relative grid size-10 place-items-center rounded-full bg-surface-2 hover:bg-line" aria-label={t('Notifications')}>
+            <Bell size={19} />
+            <Unread className="absolute -right-1 -top-1" />
+          </Link>
           <Link to="/account" className="md:hidden"><Avatar id={me.id} name={me.name} size={40} /></Link>
         </div>
       </header>
@@ -53,7 +58,7 @@ export default function Home() {
 
       {fresh ? (
         <Empty icon="🥟" title={t('Start by adding your people')} text={t('Create a group for your trip, flat or momo gang — or add friends one by one.')}
-          action={<div className="flex flex-wrap justify-center gap-2"><Link to="/groups?new=1"><Button variant="marigold"><Users size={18} /> {t('Create a group')}</Button></Link><Link to="/friends?add=1"><Button variant="soft"><UserPlus size={18} /> {t('Add friends')}</Button></Link></div>} />
+          action={<div className="flex flex-wrap justify-center gap-2"><Link to="/groups?new=1"><Button variant="marigold"><Users size={18} /> {t('Create a group')}</Button></Link><Link to="/friends?add=scan"><Button variant="soft"><ScanLine size={18} /> {t('Scan a friend’s code')}</Button></Link><Link to="/friends?add=code"><Button variant="soft"><UserPlus size={18} /> {t('Show my code')}</Button></Link></div>} />
       ) : (
         <>
           <section className="space-y-3">

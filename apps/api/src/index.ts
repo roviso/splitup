@@ -1,16 +1,17 @@
 import { Hono } from 'hono';
-import { serve } from '@hono/node-server';
+import { serve, createAdaptorServer } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { HTTPException } from 'hono/http-exception';
 import { secureHeaders } from 'hono/secure-headers';
 import { bodyLimit } from 'hono/body-limit';
 import { csrf } from 'hono/csrf';
 import { logger } from 'hono/logger';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, rmSync, chmodSync } from 'node:fs';
 import { join } from 'node:path';
 import { runMigrations } from './db';
 import { authRoutes, meRoutes, requireUser, type Env } from './auth';
 import { routes, publicRoutes } from './routes';
+import { startEvents } from './events';
 
 const api = new Hono<Env>()
   .use(bodyLimit({ maxSize: 1024 * 1024 }))
@@ -41,6 +42,13 @@ if (existsSync(join(web, 'index.html'))) {
 }
 
 const port = Number(process.env.PORT ?? 3000);
-runMigrations(process.env.MIGRATIONS_DIR ?? 'drizzle').then(() =>
-  serve({ fetch: app.fetch, port }, () => console.log(`Split-Up API on http://localhost:${port}`)),
-);
+// SOCKET_PATH: listen on a Unix socket instead (bare-metal behind host nginx).
+const socket = process.env.SOCKET_PATH;
+runMigrations(process.env.MIGRATIONS_DIR ?? 'drizzle').then(startEvents).then(() => {
+  if (!socket) return serve({ fetch: app.fetch, port }, () => console.log(`Split-Up API on http://localhost:${port}`));
+  rmSync(socket, { force: true }); // stale socket from a previous run
+  createAdaptorServer({ fetch: app.fetch }).listen(socket, () => {
+    chmodSync(socket, 0o660);
+    console.log(`Split-Up API on unix:${socket}`);
+  });
+});

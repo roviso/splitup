@@ -1,21 +1,27 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { BookUser, Search, Send, UserPlus } from 'lucide-react';
+import { BookUser, QrCode, ScanLine, Search, UserPlus } from 'lucide-react';
 import { parseContacts, type Contact } from '@splitup/shared';
-import { api, byId, refresh } from '../api';
+import { api, byId, prettyCode, refresh } from '../api';
 import { useT } from '../i18n';
-import { useDash } from '../store';
-import { Avatar, BalanceLine, Button, Card, Empty, Field, Input, Modal, PageHead, Spinner, cx, toast, toastError, whatsapp } from '../ui';
+import { useDash, useMe } from '../store';
+import { Avatar, BalanceLine, Button, Card, Empty, Input, Modal, PageHead, Spinner, cx, toast, toastError } from '../ui';
+import AddFriend, { type AddTab } from '../components/AddFriend';
 
-export const inviteUrl = (token: string) => `${location.origin}/invite/${token}`;
+export { inviteUrl } from '../components/AddFriend';
+const TABS: AddTab[] = ['code', 'scan', 'find', 'invite'];
 
 export default function Friends() {
   const t = useT();
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState('');
   const { data, isPending } = useDash();
+  const me = useMe();
   if (isPending || !data) return <Spinner />;
   const people = byId(data.people);
+  const add = params.get('add');
+  const tab = add === null ? null : TABS.includes(add as AddTab) ? (add as AddTab) : 'find';
+  const openAdd = (tb: AddTab) => setParams({ add: tb }, { replace: tab !== null });
   const bal = new Map(data.balances.map((b) => [b.userId, b.total]));
   // friends plus anyone I have a balance with (e.g. a group member)
   const ids = [...new Set([...data.friendIds, ...bal.keys()])];
@@ -27,8 +33,20 @@ export default function Friends() {
     <div>
       <PageHead title={t('Friends')} right={<>
         <Button variant="soft" onClick={() => setParams({ import: '1' })} aria-label={t('Import contacts')}><BookUser size={18} /><span className="hidden sm:inline">{t('Import')}</span></Button>
-        <Button variant="marigold" onClick={() => setParams({ add: '1' })}><UserPlus size={18} /><span className="hidden sm:inline">{t('Add friend')}</span></Button>
+        <Button variant="marigold" onClick={() => openAdd('find')}><UserPlus size={18} /><span className="hidden sm:inline">{t('Add friend')}</span></Button>
       </>} />
+      {me.friendCode && (
+        <div className="mb-5 flex items-center gap-3 overflow-hidden rounded-3xl bg-ink p-3 pl-4 text-on-ink">
+          <button onClick={() => openAdd('code')} className="flex min-w-0 flex-1 items-center gap-3 text-left cursor-pointer">
+            <span className="code-glow shrink-0 rounded-2xl p-[2px]"><span className="grid size-11 place-items-center rounded-[14px] bg-ink"><QrCode size={24} /></span></span>
+            <span className="min-w-0">
+              <span className="block text-xs opacity-70">{t('Your friend code')}</span>
+              <span className="block truncate font-mono text-lg font-bold tracking-[.15em]">{prettyCode(me.friendCode)}</span>
+            </span>
+          </button>
+          <Button variant="marigold" size="sm" onClick={() => openAdd('scan')}><ScanLine size={16} /> {t('Scan')}</Button>
+        </div>
+      )}
       {ids.length ? (
         <>
           <div className="relative mb-4">
@@ -49,57 +67,16 @@ export default function Friends() {
           </Card>
         </>
       ) : (
-        <Empty icon="🤝" title={t('No friends yet')} text={t('Add friends by email or phone, or import your contacts.')}
+        <Empty icon="🤝" title={t('No friends yet')} text={t('Scan a friend’s code, show them yours, or find them by email.')}
           action={<div className="flex flex-wrap justify-center gap-2">
-            <Button variant="marigold" onClick={() => setParams({ add: '1' })}><UserPlus size={18} /> {t('Add friend')}</Button>
+            <Button variant="marigold" onClick={() => openAdd('scan')}><ScanLine size={18} /> {t('Scan a code')}</Button>
+            <Button variant="soft" onClick={() => openAdd('find')}><UserPlus size={18} /> {t('Add friend')}</Button>
             <Button variant="soft" onClick={() => setParams({ import: '1' })}><BookUser size={18} /> {t('Import contacts')}</Button>
           </div>} />
       )}
-      <AddFriend open={params.has('add')} onClose={() => setParams({})} />
+      <AddFriend tab={tab} onTab={openAdd} onClose={() => setParams({})} />
       <ImportContacts open={params.has('import')} onClose={() => setParams({})} />
     </div>
-  );
-}
-
-function AddFriend({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const t = useT();
-  const [f, setF] = useState({ name: '', email: '', phone: '' });
-  const [added, setAdded] = useState<{ name: string; phone: string | null; inviteToken: string | null } | null>(null);
-  const [busy, setBusy] = useState(false);
-  const close = () => { setAdded(null); setF({ name: '', email: '', phone: '' }); onClose(); };
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      const p = await api<{ name: string; phone: string | null; inviteToken: string | null }>('/friends', { name: f.name, email: f.email || undefined, phone: f.phone || undefined });
-      await refresh();
-      if (p.inviteToken) setAdded(p); else { toast(t('{name} added', { name: p.name })); close(); }
-    } catch (err) { toastError(err); } finally { setBusy(false); }
-  };
-
-  return (
-    <Modal open={open} onClose={close} title={added ? t('Invite {name}', { name: added.name }) : t('Add friend')}>
-      {added?.inviteToken ? (
-        <div className="space-y-4">
-          <p className="text-muted">{t('{name} is added. You can start splitting now — send them this link so they can see it too.', { name: added.name })}</p>
-          <a href={whatsapp(added.phone, t('Hey! I added you on Split-Up to split our bills: {url}', { url: inviteUrl(added.inviteToken) }))} target="_blank" rel="noreferrer">
-            <Button className="w-full bg-[#25D366]! text-white!"><Send size={16} /> {t('Send on WhatsApp')}</Button>
-          </a>
-          <Button variant="soft" className="w-full" onClick={async () => { await navigator.clipboard.writeText(inviteUrl(added.inviteToken!)); toast(t('Invite link copied')); }}>{t('Copy invite link')}</Button>
-          <Button variant="ghost" className="w-full" onClick={close}>{t('Done')}</Button>
-        </div>
-      ) : (
-        <form onSubmit={submit} className="space-y-4">
-          <Field label={t('Name')}><Input required autoFocus maxLength={60} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
-          <Field label={t('Email (optional)')} hint={t('If they already use Split-Up, we link you right away.')}>
-            <Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
-          </Field>
-          <Field label={t('Phone (optional)')}><Input type="tel" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="98XXXXXXXX" /></Field>
-          <Button type="submit" busy={busy} className="w-full">{t('Add friend')}</Button>
-        </form>
-      )}
-    </Modal>
   );
 }
 

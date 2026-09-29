@@ -4,7 +4,7 @@ import { matchPath, useLocation } from 'react-router-dom';
 import { ArrowLeft, Check } from 'lucide-react';
 import { api, qc, type Me } from '../api';
 import { setPrefs, usePrefs, useT } from '../i18n';
-import { Button, Field, Input, Segmented, toastError } from '../ui';
+import { Avatar, Button, Field, Input, Segmented, toastError } from '../ui';
 
 declare const google: any;
 type AuthResult = { user: Me; isNew: boolean };
@@ -36,7 +36,10 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const googleRef = useRef<HTMLDivElement>(null);
 
-  const token = matchPath('/invite/:token', useLocation().pathname)?.params.token;
+  const path = useLocation().pathname;
+  const token = matchPath('/invite/:token', path)?.params.token;
+  const friendCode = matchPath('/add/:code', path)?.params.code;
+  const codeOwner = useQuery({ queryKey: ['code', friendCode], queryFn: () => api<{ id: string; name: string }>(`/codes/${friendCode}`), enabled: !!friendCode, retry: false });
   const invite = useQuery({ queryKey: ['invite', token], queryFn: () => api<{ name: string; invitedBy: string | null }>(`/invites/${token}`), enabled: !!token });
   const cfg = useQuery({ queryKey: ['config'], queryFn: () => api<{ googleClientId: string | null }>('/config') });
 
@@ -112,6 +115,12 @@ export default function Login() {
       <section className="flex flex-col p-6 md:p-12">
         <div className="flex justify-end"><LangSwitch /></div>
         <div className="mx-auto my-auto w-full max-w-sm space-y-6 py-8">
+          {codeOwner.data && (
+            <div className="flex items-center gap-3 rounded-2xl bg-marigold-soft p-4 text-sm">
+              <Avatar id={codeOwner.data.id} name={codeOwner.data.name} size={40} />
+              <span>{t('{name} wants to split bills with you. Log in or sign up to add them as a friend.', { name: codeOwner.data.name })}</span>
+            </div>
+          )}
           {invite.data && (
             <div className="rounded-2xl bg-marigold-soft p-4 text-sm">
               🙏 {t('{by} invited you to Split-Up. Log in to see what you share.', { by: invite.data.invitedBy ?? t('A friend') })}

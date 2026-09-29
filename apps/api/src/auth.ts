@@ -43,7 +43,7 @@ const password = z.string().min(8, 'Password needs at least 8 characters').max(2
 
 // ponytail: in-memory per-IP limiter, fine for one server; move to Redis/DB if you run several.
 const hits = new Map<string, number[]>();
-function limit(c: Context, max: number, windowMs: number) {
+export function limit(c: Context, max: number, windowMs: number) {
   if (!prod) return;
   // Last hop = what our own proxy (Caddy) saw; earlier entries are client-controlled.
   const ip = c.req.header('x-forwarded-for')?.split(',').at(-1)?.trim() ?? 'local';
@@ -101,6 +101,25 @@ async function userForEmail(email: string, name?: string, googleSub?: string) {
   }
   const [u] = await db.insert(users).values({ email, name: name || email.split('@')[0], googleSub, registered: true }).returning();
   return { user: u, isNew: true };
+}
+
+// No 0/O, 1/I/L: people read these codes aloud and type them in.
+const CODE_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+const newFriendCode = () => Array.from(randomBytes(8), (b) => CODE_CHARS[b % CODE_CHARS.length]).join('');
+/** "ab2c-d3ef" / "AB2C D3EF" → "AB2CD3EF". */
+export const normCode = (s: string) => s.toUpperCase().replace(/[^0-9A-Z]/g, '');
+
+/** Give the user a (new) personal friend code. `replace` revokes the old one. */
+export async function assignFriendCode(u: User, replace = false): Promise<User> {
+  if (u.friendCode && !replace) return u;
+  for (let i = 0; ; i++) {
+    try {
+      const [row] = await db.update(users).set({ friendCode: newFriendCode() }).where(eq(users.id, u.id)).returning();
+      return row;
+    } catch (e) {
+      if (i >= 3) throw e; // unique clash is ~impossible; don't loop forever on a real error
+    }
+  }
 }
 
 const email = z.email().trim().toLowerCase();
@@ -173,7 +192,8 @@ export const requireUser: MiddlewareHandler<Env> = async (c, next) => {
 };
 
 export const meRoutes = new Hono<Env>()
-  .get('/me', (c) => c.json(self(c.get('user'))))
+  .get('/me', async (c) => c.json(self(await assignFriendCode(c.get('user')))))
+  .post('/me/code/reset', async (c) => c.json(self(await assignFriendCode(c.get('user'), true))))
   .patch('/me', async (c) => {
     const [u] = await db.update(users).set(await parse(c, profileInput)).where(eq(users.id, c.get('user').id)).returning();
     return c.json(self(u));

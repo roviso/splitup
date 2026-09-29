@@ -27,6 +27,7 @@ export const refresh = () => qc.invalidateQueries();
 export type Me = {
   id: string; name: string; email: string | null; phone: string | null; registered: boolean;
   locale: 'en' | 'ne'; calendar: 'ad' | 'bs'; esewaId: string | null; khaltiId: string | null; paymentQr: string | null; hasPassword: boolean;
+  friendCode: string | null;
 };
 export type Person = {
   id: string; name: string; email: string | null; phone: string | null; registered: boolean;
@@ -40,7 +41,7 @@ export type Expense = {
 };
 export type Settlement = {
   id: string; groupId: string | null; fromUser: string; toUser: string; amount: number; method: string;
-  note: string | null; date: string; createdBy: string; createdAt: string; deletedAt: string | null;
+  note: string | null; date: string; createdBy: string; createdAt: string; confirmedAt: string | null; deletedAt: string | null;
 };
 export type Part = { groupId: string | null; amount: number };
 export type Dashboard = {
@@ -58,6 +59,19 @@ export type Activity = {
   items: ({ kind: 'expense'; at: string; data: Expense } | { kind: 'settlement'; at: string; data: Settlement })[];
   groups: { id: string; name: string }[]; people: Person[];
 };
+
+export type Notice = {
+  id: string; kind: string; actorId: string | null; createdAt: string; readAt?: string | null;
+  data: {
+    groupId?: string | null; group?: string | null; name?: string; amount?: number; net?: number; description?: string;
+    expenseId?: string; settlementId?: string; from?: string; to?: string; method?: string;
+  };
+};
+export type Inbox = { items: Notice[]; unread: number; people: Person[] };
+
+/** "AB2CD3EF" → "AB2C-D3EF" */
+export const prettyCode = (c: string) => c.replace(/^(.{4})(.{4})$/, '$1-$2');
+export const addUrl = (code: string) => `${location.origin}/add/${code}`;
 
 /** My net position in one expense: positive = I lent, negative = I borrowed. */
 export const myNet = (e: Pick<Expense, 'payers' | 'shares'>, me: string) =>

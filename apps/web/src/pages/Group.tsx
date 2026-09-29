@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Download, HandCoins, Link2, LogOut, Plus, Settings, Trash2, UserPlus } from 'lucide-react';
+import { ArrowLeft, Download, HandCoins, Link2, LogOut, Plus, QrCode, Settings, Trash2, UserPlus } from 'lucide-react';
 import { GROUP_TYPES } from '@splitup/shared';
 import { api, myNet, refresh, type GroupDetail } from '../api';
 import { money, usePrefs, useT } from '../i18n';
@@ -9,6 +9,8 @@ import { openExpense, openSettle, usePeople } from '../store';
 import { Avatar, Avatars, Button, Card, Empty, Field, Input, Modal, Money, PageHead, Segmented, Spinner, Toggle, cx, shareLink, toast, toastError } from '../ui';
 import { Ledger } from '../components/Rows';
 import PersonPicker from '../components/PersonPicker';
+import QR from '../components/QR';
+import { LivePill } from '../components/Notices';
 import { GROUP_EMOJI } from './Groups';
 
 export default function Group() {
@@ -33,7 +35,7 @@ export default function Group() {
       <PageHead
         back={<Link to="/groups" className="mb-2 inline-flex items-center gap-1 text-sm font-semibold text-muted hover:text-ink"><ArrowLeft size={16} /> {t('Groups')}</Link>}
         title={<span className="flex items-center gap-3"><span className="grid size-12 place-items-center rounded-2xl bg-marigold-soft text-3xl">{GROUP_EMOJI[group.type] ?? '👥'}</span>{group.name}</span>}
-        sub={<span className="mt-2 flex items-center gap-2"><Avatars people={members} max={6} /> <span className="text-sm">{t('{n} members', { n: members.length })}</span></span>}
+        sub={<span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1"><span className="flex items-center gap-2"><Avatars people={members} max={6} /> <span className="text-sm">{t('{n} members', { n: members.length })}</span></span><LivePill /></span>}
         right={<Button variant="soft" onClick={() => setSettings(true)} aria-label={t('Group settings')}><Settings size={18} /></Button>}
       />
 
@@ -111,6 +113,7 @@ function GroupSettings({ open, onClose, data }: { open: boolean; onClose: () => 
   const [title, setTitle] = useState(group.name);
   const [adding, setAdding] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [qr, setQr] = useState(false);
   const link = `${location.origin}/join/${group.inviteCode}`;
 
   const act = async (f: () => Promise<unknown>, ok?: string) => {
@@ -148,8 +151,15 @@ function GroupSettings({ open, onClose, data }: { open: boolean; onClose: () => 
           <p className="text-sm font-medium text-muted">{t('Invite with a link')}</p>
           <div className="flex gap-2">
             <Input readOnly value={link} onFocus={(e) => e.target.select()} className="text-sm" />
-            <Button variant="soft" onClick={() => shareLink(t('Join "{name}" on Split-Up', { name: group.name }), link, t('Invite link copied'))}><Link2 size={16} /></Button>
+            <Button variant="soft" onClick={() => shareLink(t('Join "{name}" on Split-Up', { name: group.name }), link, t('Invite link copied'))} aria-label={t('Share')}><Link2 size={16} /></Button>
+            <Button variant={qr ? 'ink' : 'soft'} onClick={() => setQr(!qr)} aria-label={t('Show QR')}><QrCode size={16} /></Button>
           </div>
+          {qr && (
+            <div className="flex flex-col items-center gap-2 rounded-3xl bg-marigold-soft p-5 animate-[fade_.25s]">
+              <div className="rounded-2xl bg-white p-3 shadow-sm"><QR text={link} size={200} /></div>
+              <p className="text-center text-xs text-muted">{t('Friends scan this to join “{name}”', { name: group.name })}</p>
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">

@@ -12,6 +12,7 @@ export const users = pgTable('users', {
   passwordHash: text('password_hash'), // optional: code/Google users may never set one
   registered: boolean('registered').notNull().default(false), // false = placeholder added by a friend
   inviteToken: text('invite_token').unique(), // lets a placeholder be claimed on signup
+  friendCode: text('friend_code').unique(), // personal add-me code behind the QR / splitup…/add/<code> link
   locale: text('locale').notNull().default('en'),
   calendar: text('calendar').notNull().default('ad'),
   esewaId: text('esewa_id'),
@@ -90,5 +91,17 @@ export const settlements = pgTable('settlements', {
   date: date('date', { mode: 'string' }).notNull(),
   createdBy: uuid('created_by').notNull().references(() => users.id),
   createdAt: ts('created_at').notNull().defaultNow(),
+  confirmedAt: ts('confirmed_at'), // receiver said "got it"; doesn't change balances
   deletedAt: ts('deleted_at'),
 }, (t) => [index().on(t.groupId), index().on(t.fromUser), index().on(t.toUser)]);
+
+/** In-app inbox. `data` holds what the text needs (names, amounts) so it still reads right after deletes. */
+export const notifications = pgTable('notifications', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  actorId: uuid('actor_id').references(() => users.id, { onDelete: 'set null' }),
+  kind: text('kind').notNull(),
+  data: jsonb('data').notNull().default({}),
+  readAt: ts('read_at'),
+  createdAt: ts('created_at').notNull().defaultNow(),
+}, (t) => [index().on(t.userId, t.createdAt)]);

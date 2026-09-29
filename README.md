@@ -8,7 +8,10 @@ Split bills with friends, the Nepali way. Web app live at **splitup.thimitech.co
 - **Settle up with eSewa, Khalti or Fonepay.** Friends see your wallet ID and QR code when they pay you.
 - **English and नेपाली** (Devanagari numerals, lakh grouping), with **B.S. or A.D. dates**.
 - **Easy signup:** email + password (the email is confirmed once with a code), a passwordless email code, or Google. **Import contacts** from your phone (Android Chrome) or a .vcf/.csv file. Invite people by WhatsApp or link; their history links to their account when they join.
-- Groups, invite links, activity feed with undo (restore deleted expenses), payment reminders on WhatsApp, CSV export, installable as a PWA.
+- **Add friends by QR.** Everyone has a personal friend code and QR. Friends scan it with the phone camera or the in-app scanner, or look you up by code or exact email. Adding is mutual and instant, with a celebration on both phones.
+- **Live sync.** Groups, expenses and settle-ups show up on everyone's screen as they happen (server-sent events over Postgres LISTEN/NOTIFY), with pop-down banners and a "For you" inbox.
+- **Shared settle-up.** The receiver taps "Got it ✓" and the payer sees it confirmed. In-app nudges for people who owe you. Link a by-name placeholder to your friend's real account once they join.
+- Groups, invite links and QR, activity feed with undo (restore deleted expenses), payment reminders on WhatsApp, CSV export, installable as a PWA.
 
 ## Stack
 
@@ -71,6 +74,8 @@ server {
   # then: certbot --nginx -d splitup.thimitech.com
 }
 ```
+
+Live updates use a long-lived `GET /api/events` stream. The app sends `X-Accel-Buffering: no` and a heartbeat every 25 s, so nginx's default buffering and a 60 s `proxy_read_timeout` are fine.
 
 **Back up the database every night.** It holds people's money records.
 
