@@ -7,6 +7,7 @@ import { byId } from '../api';
 import { LangSwitch } from './Login';
 import { GROUP_EMOJI } from './Groups';
 import { Unread } from '../components/Notices';
+import AiBar from '../components/AiBar';
 
 export default function Home() {
   const t = useT();
@@ -49,6 +50,8 @@ export default function Home() {
           <div><p className="text-xs opacity-70">{t('You owe')}</p><p className="text-lg font-bold text-owe">{money(data.totals.owe, lang)}</p></div>
         </div>
       </div>
+
+      <AiBar />
 
       <div className="grid grid-cols-3 gap-2">
         <Quick icon={<Plus />} label={t('Add expense')} onClick={() => openExpense({})} accent />

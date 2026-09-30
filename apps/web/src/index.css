@@ -135,6 +135,17 @@ dialog[open] { animation: rise .22s cubic-bezier(.2,.8,.2,1); }
 @property --a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
 @keyframes spin-a { to { --a: 360deg; } }
 
+/* AI bar: a marigold → sindoor ring that slowly turns, so the one AI entry point is easy to spot */
+.ai-bar {
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    conic-gradient(from var(--a, 0deg), var(--marigold), var(--owe) 20%, var(--line) 38%, var(--line) 62%, var(--owe) 80%, var(--marigold)) border-box;
+  animation: spin-a 7s linear infinite;
+  transition: box-shadow .2s;
+}
+.ai-bar:focus-within { box-shadow: 0 0 0 4px var(--marigold-soft); }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
@@ -142,3 +153,5 @@ dialog[open] { animation: rise .22s cubic-bezier(.2,.8,.2,1); }
 input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
 input[type="number"] { -moz-appearance: textfield; }
 :focus-visible { outline: 2px solid var(--marigold); outline-offset: 2px; }
+/* For a text box inside a pill that already shows focus with its border. Unlayered, like the rule above, so it wins. */
+.no-ring:focus-visible { outline: none; }

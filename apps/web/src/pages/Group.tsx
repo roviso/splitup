@@ -12,6 +12,7 @@ import PersonPicker from '../components/PersonPicker';
 import QR from '../components/QR';
 import { LivePill } from '../components/Notices';
 import { GROUP_EMOJI } from './Groups';
+import AiBar from '../components/AiBar';
 
 export default function Group() {
   const { id } = useParams();
@@ -45,10 +46,11 @@ export default function Group() {
         <Stat label={t('Your share')} value={<span className="font-semibold">{money(mine, lang)}</span>} />
       </div>
 
-      <div className="mb-6 flex gap-2">
+      <div className="mb-3 flex gap-2">
         <Button variant="marigold" className="flex-1" onClick={() => openExpense({ groupId: group.id })}><Plus size={18} /> {t('Add expense')}</Button>
         <Button variant="soft" className="flex-1" onClick={() => openSettle({ groupId: group.id })}><HandCoins size={18} /> {t('Settle up')}</Button>
       </div>
+      <AiBar groupId={group.id} className="mb-6" />
 
       <div className="mb-4"><Segmented value={tab} onChange={setTab} options={[{ value: 'expenses', label: t('Expenses') }, { value: 'balances', label: t('Balances') }]} /></div>
 

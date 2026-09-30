@@ -9,6 +9,7 @@ import { Avatar, Button, Card, Empty, Modal, Money, Spinner, cx, shareLink, toas
 import { LivePill } from '../components/Notices';
 import { Ledger } from '../components/Rows';
 import { inviteUrl } from './Friends';
+import AiBar from '../components/AiBar';
 
 export default function Friend() {
   const { id } = useParams();
@@ -72,6 +73,8 @@ export default function Friend() {
           <Button variant="soft" onClick={() => shareLink(t('Hey! I added you on Split-Up to split our bills:'), inviteUrl(f.inviteToken!), t('Invite link copied'))}><Send size={16} /> {t('Invite')}</Button>
         )}
       </div>
+
+      {isFriend && <AiBar friendId={f.id} />}
 
       {f.inviteToken && isFriend && (
         <Card className="flex items-center gap-3 border-dashed p-4">

@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { serve, createAdaptorServer } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { HTTPException } from 'hono/http-exception';
@@ -11,14 +11,20 @@ import { join } from 'node:path';
 import { runMigrations } from './db';
 import { authRoutes, meRoutes, requireUser, type Env } from './auth';
 import { routes, publicRoutes } from './routes';
+import { aiRoutes } from './ai';
 import { startEvents } from './events';
 
+// Bill photos are the only big uploads; the browser shrinks them to ~1.5 MB first.
+const tooBig = (message: string) => (c: Context) => c.json({ error: message }, 413);
+const small = bodyLimit({ maxSize: 1024 * 1024, onError: tooBig('That’s too much data in one go') });
+const photo = bodyLimit({ maxSize: 4 * 1024 * 1024, onError: tooBig('That photo is too big. Try a smaller one.') });
 const api = new Hono<Env>()
-  .use(bodyLimit({ maxSize: 1024 * 1024 }))
+  .use((c, next) => (c.req.path === '/api/ai/scan' ? photo : small)(c, next))
   .route('/', authRoutes)
   .route('/', publicRoutes)
   .use(requireUser)
   .route('/', meRoutes)
+  .route('/', aiRoutes)
   .route('/', routes);
 
 const app = new Hono()

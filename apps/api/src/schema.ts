@@ -20,7 +20,23 @@ export const users = pgTable('users', {
   paymentQr: text('payment_qr'),
   createdBy: uuid('created_by'),
   createdAt: ts('created_at').notNull().defaultNow(),
-});
+  joinedAt: ts('joined_at'), // became a real account (sign-up, or a placeholder claimed); starts the invite-code window
+  // AI credits: free ones used in `aiPeriod` ("2026-09", Nepal time), plus bonus ones that never expire
+  aiUsed: integer('ai_used').notNull().default(0),
+  aiPeriod: text('ai_period'),
+  aiBonus: integer('ai_bonus').notNull().default(0),
+  referredBy: uuid('referred_by'), // whose invite code they signed up with
+}, (t) => [index().on(t.referredBy)]);
+
+/** One AI bill. Its first request costs a credit; follow-ups on the same bill are free, within limits. */
+export const aiSessions = pgTable('ai_sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  bucket: text('bucket').notNull(), // 'monthly' | 'bonus': where the credit came from, for refunds
+  period: text('period').notNull(),
+  turns: integer('turns').notNull().default(1),
+  createdAt: ts('created_at').notNull().defaultNow(),
+}, (t) => [index().on(t.userId)]);
 
 export const sessions = pgTable('sessions', {
   tokenHash: text('token_hash').primaryKey(),

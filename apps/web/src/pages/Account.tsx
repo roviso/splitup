@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react';
-import { LogOut, QrCode, Trash2 } from 'lucide-react';
+import { LogOut, QrCode, Sparkles, Trash2 } from 'lucide-react';
 import { api, qc, type Me } from '../api';
 import { setPrefs, useT, date, usePrefs, today } from '../i18n';
 import { useMe } from '../store';
 import { Avatar, Button, Card, Field, Input, PageHead, Segmented, toast, toastError } from '../ui';
+import { CreditsPanel } from '../components/Credits';
 
 /** Shrink an uploaded QR screenshot to a small data URL (QR codes survive downscaling well). */
 async function shrink(file: File, max = 600): Promise<string> {
@@ -78,8 +79,18 @@ export default function Account() {
       <Card className="space-y-4 p-5">
         <h2 className="font-display text-lg font-bold">{t('Language & calendar')}</h2>
         <Segmented value={prefs.lang} onChange={(lang) => { setPrefs({ lang }); save({ locale: lang }); }} options={[{ value: 'en', label: 'English' }, { value: 'ne', label: 'नेपाली' }]} />
-        <Segmented value={prefs.cal} onChange={(cal) => { setPrefs({ cal }); save({ calendar: cal }); }} options={[{ value: 'ad', label: t('A.D. (English)') }, { value: 'bs', label: t('B.S. (Nepali)') }]} />
-        <p className="text-sm text-muted">{t('Today is {date}', { date: date(today(), prefs) })}</p>
+        {prefs.lang === 'en' && (
+          <Segmented value={prefs.cal} onChange={(cal) => { setPrefs({ cal }); save({ calendar: cal }); }} options={[{ value: 'ad', label: t('A.D. (English)') }, { value: 'bs', label: t('B.S. (Nepali)') }]} />
+        )}
+        <p className="text-sm text-muted">
+          {t('Today is {date}', { date: date(today(), prefs) })}
+          {prefs.lang === 'ne' && <span className="block text-xs">{t('Dates show in B.S. in Nepali.')}</span>}
+        </p>
+      </Card>
+
+      <Card className="space-y-4 p-5">
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold"><Sparkles size={18} className="text-marigold" /> {t('AI credits')}</h2>
+        <CreditsPanel />
       </Card>
 
       <form onSubmit={submit}>

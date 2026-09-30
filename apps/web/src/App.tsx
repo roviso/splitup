@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import { NavLink, Navigate, Route, Routes, Link } from 'react-router-dom';
-import { Activity as ActivityIcon, Home as HomeIcon, Plus, UserRound, Users, Settings } from 'lucide-react';
+import { Activity as ActivityIcon, Camera, Home as HomeIcon, Plus, Sparkles, UserRound, Users, Settings } from 'lucide-react';
 import { ApiError } from './api';
 import { setPrefs, useT } from './i18n';
-import { useMeQuery, openExpense } from './store';
-import { Avatar, Button, Spinner, Toasts, cx } from './ui';
+import { useMeQuery, openExpense, useConfig } from './store';
+import { openAi, snapBill } from './ai';
+import { Avatar, Button, Spinner, Toasts, cx, toast } from './ui';
 import Login from './pages/Login';
 import Home from './pages/Home';
 import Groups from './pages/Groups';
@@ -17,6 +18,8 @@ import { AddByCode, Invite, Join } from './pages/Join';
 import ExpenseForm from './components/ExpenseForm';
 import SettleUp from './components/SettleUp';
 import ExpenseDetail from './components/ExpenseDetail';
+import SmartSplit from './components/SmartSplit';
+import CreditsSheet, { forgetInvite, openCredits, pendingInvite, redeem } from './components/Credits';
 import { Banners, Celebrate, LivePill, Unread } from './components/Notices';
 import { useLive } from './live';
 
@@ -39,10 +42,23 @@ const NAV = [
 export default function App() {
   const me = useMeQuery();
   const t = useT();
+  const ai = useConfig().data?.ai;
   useLive(!!me.data);
   useEffect(() => {
     if (me.data) setPrefs({ lang: me.data.locale, cal: me.data.calendar });
   }, [me.data?.locale, me.data?.calendar]);
+
+  // Signed up from a friend's invite link or typed their code: claim the bonus once we're in (works for every sign-in method).
+  useEffect(() => {
+    const code = pendingInvite();
+    if (!me.data || !code) return;
+    if (!me.data.canRedeem) return forgetInvite();
+    redeem(code).then(
+      (r) => toast(t('You and {name} got {n} bonus AI credits 🎉', { name: r.inviter.name.split(' ')[0], n: r.bonus })),
+      () => forgetInvite(), // bad or own code: not worth an error on first login
+    );
+  }, [me.data?.id]);
+  const gate = (f: () => void) => ((me.data?.aiCredits.left ?? 0) > 0 ? f() : openCredits(true));
 
   if (me.isPending) return <Spinner />;
   if (me.error instanceof ApiError && me.error.status === 401) return <><Login /><Toasts /></>;
@@ -66,7 +82,15 @@ export default function App() {
         <div className="dhaka" />
         <div className="flex flex-1 flex-col gap-8 p-5">
           <Logo />
-          <Button variant="marigold" onClick={() => openExpense({})}><Plus size={18} /> {t('Add expense')}</Button>
+          <div className="space-y-2">
+            <Button variant="marigold" className="w-full" onClick={() => openExpense({})}><Plus size={18} /> {t('Add expense')}</Button>
+            {ai && (
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="soft" size="sm" onClick={() => gate(() => snapBill({}))}><Camera size={15} /> {t('Scan bill')}</Button>
+                <Button variant="soft" size="sm" onClick={() => gate(() => openAi({}))}><Sparkles size={15} className="text-marigold" /> {t('Ask AI')}</Button>
+              </div>
+            )}
+          </div>
           <nav className="flex flex-col gap-1">
             {NAV.map((n) => <NavLink key={n.to} to={n.to} end={n.to === '/'} className={link}><n.icon size={19} /> {t(n.label)}{n.to === '/activity' && <Unread className="ml-auto" />}</NavLink>)}
             <NavLink to="/account" className={link}><Settings size={19} /> {t('Account')}</NavLink>
@@ -113,6 +137,8 @@ export default function App() {
       <ExpenseForm />
       <SettleUp />
       <ExpenseDetail />
+      <SmartSplit />
+      <CreditsSheet />
       <Celebrate />
       <Banners />
       <Toasts />

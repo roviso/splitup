@@ -4,17 +4,34 @@ import { matchPath, useLocation } from 'react-router-dom';
 import { ArrowLeft, Check } from 'lucide-react';
 import { api, qc, type Me } from '../api';
 import { setPrefs, usePrefs, useT } from '../i18n';
-import { Avatar, Button, Field, Input, Segmented, toastError } from '../ui';
+import { useConfig } from '../store';
+import { forgetInvite, pendingInvite, rememberInvite } from '../components/Credits';
+import { REFERRAL_BONUS } from '@splitup/shared';
+import { Avatar, Button, Field, Input, Segmented, toast, toastError } from '../ui';
 
 declare const google: any;
 type AuthResult = { user: Me; isNew: boolean };
+
+/** Google's four-colour "G", per their branding guidelines. */
+const GoogleG = () => (
+  <svg viewBox="0 0 48 48" className="size-5" aria-hidden>
+    <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z" />
+    <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+    <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z" />
+    <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z" />
+  </svg>
+);
 
 export function LangSwitch() {
   const { lang } = usePrefs();
   return (
     <div className="flex rounded-full bg-surface-2 p-1 text-sm font-semibold">
       {(['en', 'ne'] as const).map((l) => (
-        <button key={l} onClick={() => setPrefs({ lang: l })} className={`rounded-full px-3 py-1 cursor-pointer ${lang === l ? 'bg-surface shadow-sm' : 'text-muted'}`}>
+        <button key={l} onClick={() => {
+          setPrefs({ lang: l });
+          // Logged in: save it too, or the account's saved language puts it back on the next load.
+          if (qc.getQueryData(['me'])) api<Me>('/me', { locale: l }, 'PATCH').then((u) => qc.setQueryData(['me'], u), () => {});
+        }} className={`rounded-full px-3 py-1 cursor-pointer ${lang === l ? 'bg-surface shadow-sm' : 'text-muted'}`}>
           {l === 'en' ? 'EN' : 'नेपाली'}
         </button>
       ))}
@@ -33,6 +50,7 @@ export default function Login() {
   const [code, setCode] = useState('');
   const [devCode, setDevCode] = useState<string>();
   const [name, setName] = useState('');
+  const [inviteCode, setInviteCode] = useState(pendingInvite());
   const [busy, setBusy] = useState(false);
   const googleRef = useRef<HTMLDivElement>(null);
 
@@ -41,7 +59,16 @@ export default function Login() {
   const friendCode = matchPath('/add/:code', path)?.params.code;
   const codeOwner = useQuery({ queryKey: ['code', friendCode], queryFn: () => api<{ id: string; name: string }>(`/codes/${friendCode}`), enabled: !!friendCode, retry: false });
   const invite = useQuery({ queryKey: ['invite', token], queryFn: () => api<{ name: string; invitedBy: string | null }>(`/invites/${token}`), enabled: !!token });
-  const cfg = useQuery({ queryKey: ['config'], queryFn: () => api<{ googleClientId: string | null }>('/config') });
+  const cfg = useConfig();
+  useEffect(() => { if (friendCode) { rememberInvite(friendCode); setInviteCode(friendCode); } }, [friendCode]);
+
+  // Back from Google without a session: say why once, then tidy the URL.
+  useEffect(() => {
+    const why = new URLSearchParams(location.search).get('google');
+    if (!why) return;
+    if (why !== 'cancelled') toast(why === 'unverified' ? t('Your Google email isn’t verified yet') : t('Google sign-in didn’t work. Try again, or use your email.'), true);
+    history.replaceState(null, '', location.pathname);
+  }, []);
 
   const finish = (r: AuthResult) => {
     if (r.isNew) { setName(invite.data?.name ?? r.user.name); setStep('name'); }
@@ -52,9 +79,10 @@ export default function Login() {
     try { await f(); } catch (e) { toastError(e); } finally { setBusy(false); }
   };
 
+  // Fallback when the server has no client secret: Google's own in-page button.
   useEffect(() => {
     const clientId = cfg.data?.googleClientId;
-    if (!clientId || step !== 'email' || !googleRef.current) return;
+    if (!clientId || cfg.data?.googleRedirect || step !== 'email' || !googleRef.current) return;
     const render = () => {
       google.accounts.id.initialize({
         client_id: clientId,
@@ -99,7 +127,7 @@ export default function Login() {
               {t('Eat together.')}<br /><span className="text-[#f2a007]">{t('Split fairly.')}</span><br />{t('Stay friends.')}
             </h1>
             <ul className="hidden space-y-2.5 text-[#fbf7f0]/80 md:block">
-              {['Itemized bills with 10% service charge & 13% VAT', 'Settle up with eSewa, Khalti or Fonepay', 'Free & unlimited. English and नेपाली.'].map((f) => (
+              {['Snap a bill and AI splits it. 5 free every month.', 'Itemized bills with 10% service charge & 13% VAT', 'Settle up with eSewa, Khalti or Fonepay', 'Free & unlimited. English and नेपाली.'].map((f) => (
                 <li key={f} className="flex items-start gap-2.5"><Check size={18} className="mt-0.5 shrink-0 text-[#f2a007]" /> {t(f)}</li>
               ))}
             </ul>
@@ -118,7 +146,10 @@ export default function Login() {
           {codeOwner.data && (
             <div className="flex items-center gap-3 rounded-2xl bg-marigold-soft p-4 text-sm">
               <Avatar id={codeOwner.data.id} name={codeOwner.data.name} size={40} />
-              <span>{t('{name} wants to split bills with you. Log in or sign up to add them as a friend.', { name: codeOwner.data.name })}</span>
+              <span>
+                {t('{name} wants to split bills with you. Log in or sign up to add them as a friend.', { name: codeOwner.data.name })}
+                <b className="mt-1 block">🎁 {t('New here? You both get {n} free AI bill scans.', { n: REFERRAL_BONUS })}</b>
+              </span>
             </div>
           )}
           {invite.data && (
@@ -136,6 +167,15 @@ export default function Login() {
               {step === 'name' && t('What should your friends call you?')}
             </p>
           </div>
+          {step === 'email' && cfg.data?.googleRedirect && (
+            <>
+              <a href={`/api/auth/google/start?next=${encodeURIComponent(path)}`}
+                className="flex h-13 w-full items-center justify-center gap-3 rounded-full border border-line bg-surface text-[17px] font-semibold shadow-sm transition hover:bg-surface-2 active:scale-[.98]">
+                <GoogleG /> {t('Continue with Google')}
+              </a>
+              <div className="flex items-center gap-3 text-xs text-muted"><span className="h-px flex-1 bg-line" />{t('or use your email')}<span className="h-px flex-1 bg-line" /></div>
+            </>
+          )}
           {step === 'email' && (
             <Segmented value={tab} onChange={(v) => { setTab(v); setViaCode(false); }}
               options={[{ value: 'login', label: t('Log in') }, { value: 'signup', label: t('Sign up') }]} />
@@ -149,6 +189,12 @@ export default function Login() {
             {step === 'email' && (
               <Field label={t('Email')}>
                 <Input type="email" required autoFocus autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+              </Field>
+            )}
+            {step === 'email' && tab === 'signup' && (
+              <Field label={t('Invite code (optional)')} hint={t('From a friend? You both get {n} free AI bill scans.', { n: REFERRAL_BONUS })}>
+                <Input value={inviteCode} maxLength={20} autoComplete="off" placeholder="7KQ2-M9XP" className="font-display tracking-widest"
+                  onChange={(e) => { const v = e.target.value.toUpperCase(); setInviteCode(v); v.trim() ? rememberInvite(v) : forgetInvite(); }} />
               </Field>
             )}
             {step === 'email' && !(tab === 'login' && viaCode) && (
@@ -188,7 +234,7 @@ export default function Login() {
               <button className="font-semibold hover:underline cursor-pointer" onClick={() => run(sendCode)}>{t('Resend code')}</button>
             </div>
           )}
-          {step === 'email' && cfg.data?.googleClientId && (
+          {step === 'email' && cfg.data?.googleClientId && !cfg.data.googleRedirect && (
             <>
               <div className="flex items-center gap-3 text-xs text-muted"><span className="h-px flex-1 bg-line" />{t('or')}<span className="h-px flex-1 bg-line" /></div>
               <div ref={googleRef} className="flex justify-center" />
