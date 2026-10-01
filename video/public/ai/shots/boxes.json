@@ -1,0 +1,92 @@
+{
+ "inviteBanner": {
+  "x": 24,
+  "y": 359.390625,
+  "width": 364,
+  "height": 740
+ },
+ "aiBar": {
+  "x": 16,
+  "y": 377,
+  "width": 380,
+  "height": 54
+ },
+ "aiInput": {
+  "x": 59,
+  "y": 384,
+  "width": 200.828125,
+  "height": 40
+ },
+ "creditDots": {
+  "x": 36,
+  "y": 533.5,
+  "width": 340,
+  "height": 20
+ },
+ "inviteCode": {
+  "x": 36,
+  "y": 741,
+  "width": 276,
+  "height": 50
+ },
+ "shareInvite": {
+  "x": 36,
+  "y": 803,
+  "width": 340,
+  "height": 44
+ },
+ "bonusRow": {
+  "x": 36,
+  "y": 585.5,
+  "width": 340,
+  "height": 29
+ },
+ "liveSync": {
+  "x": 214.765625,
+  "y": 114,
+  "width": 66.765625,
+  "height": 16
+ },
+ "upload": {
+  "x": 254.25,
+  "y": 597,
+  "width": 117.75,
+  "height": 44
+ },
+ "composer": {
+  "x": 20,
+  "y": 783,
+  "width": 372,
+  "height": 54
+ },
+ "save": {
+  "x": 20,
+  "y": 846.953125,
+  "width": 372,
+  "height": 52
+ },
+ "shareList": {
+  "x": 20,
+  "y": 527.953125,
+  "width": 372,
+  "height": 172
+ },
+ "matches": {
+  "x": 20,
+  "y": 351.953125,
+  "width": 372,
+  "height": 40
+ },
+ "chatPeople": {
+  "x": 0,
+  "y": 426.203125,
+  "width": 412,
+  "height": 45.75
+ },
+ "chatReply": {
+  "x": 20,
+  "y": 733,
+  "width": 372,
+  "height": 40
+ }
+}

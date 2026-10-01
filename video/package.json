@@ -1,0 +1,31 @@
+{
+  "name": "splitup-launch-video",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "shots": "node scripts/screenshots.mjs",
+    "voice": "node scripts/voice.mjs",
+    "align": "node scripts/align.mjs",
+    "check-voice": "node scripts/check-voice.mjs",
+    "music": "node scripts/music.mjs",
+    "mix": "node scripts/mix.mjs",
+    "stills": "node scripts/stills.mjs",
+    "render": "node scripts/render.mjs",
+    "studio": "remotion studio"
+  },
+  "dependencies": {
+    "@remotion/captions": "^4.0.530",
+    "@remotion/cli": "^4.0.530",
+    "@remotion/google-fonts": "^4.0.530",
+    "@remotion/install-whisper-cpp": "^4.0.530",
+    "@remotion/media-utils": "^4.0.530",
+    "@remotion/motion-blur": "^4.0.530",
+    "@remotion/renderer": "^4.0.530",
+    "@types/react": "^19.3.0",
+    "playwright": "^1.63.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "remotion": "^4.0.530",
+    "typescript": "^7.0.2"
+  }
+}

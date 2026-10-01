@@ -1,0 +1,13 @@
+{
+  "appId": "com.thimitech.splitup",
+  "appName": "Split-Up",
+  "webDir": "../web/dist",
+  "server": {
+    "url": "https://splitup.thimitech.com",
+    "androidScheme": "https",
+    "cleartext": false
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

@@ -2,3 +2,9 @@ node_modules
 dist
 .env
 *.log
+video/node_modules
+video/out
+video/research
+video/.stills
+video/whisper.cpp
+video/whisper17

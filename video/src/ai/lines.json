@@ -1,0 +1,20 @@
+[
+  { "id": "hook", "tag": "excited", "text": "Dinner was perfect. Momo, laughs, the whole gang. [amazed] Then the bill arrived." },
+  { "id": "sad", "tag": "disappointed", "text": "Two beers, one chowmein nobody remembers ordering, ten percent service, thirteen percent VAT... and someone opens the calculator." },
+  { "id": "turn", "text": "Put the calculator away." },
+  { "id": "reveal", "text": "Split-Up now has AI. Meet Smart Split." },
+  { "id": "snap", "text": "Snap the bill." },
+  { "id": "read", "text": "It reads every item, the service charge and the VAT, even the Nepali date." },
+  { "id": "say", "text": "Then just tell it who had what." },
+  { "id": "shares", "text": "Every share, worked out to the paisa, and checked against the bill." },
+  { "id": "chat", "text": "No photo? Just type it the way you text. English, Nepali, or both." },
+  { "id": "save", "text": "Tap save, and the whole group sees it live." },
+  { "id": "credits", "text": "Every month, your first five AI bills are free." },
+  { "id": "invite", "text": "Want more? Share your invite code." },
+  { "id": "bonus", "text": "When a friend signs up with it, you both get five more. And they never expire." },
+  { "id": "payoff", "text": "So next time the bill arrives... snap it, say it, and you're square before the tea gets cold." },
+  { "id": "soon", "text": "Split-Up is coming soon to the Play Store and the App Store. But you can have it today." },
+  { "id": "android", "text": "On Android, open the site in Chrome, tap the menu, then Install app." },
+  { "id": "iphone", "text": "On iPhone, open it in Safari, tap Share, then Add to Home Screen." },
+  { "id": "cta", "text": "Snap the bill. Say who had what. Stay friends. Splitup dot thimitech dot com." }
+]

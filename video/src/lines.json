@@ -1,0 +1,68 @@
+[
+  {
+    "id": "hook",
+    "tag": "excited",
+    "text": "Friday night. Momo with the gang, and you grab the bill. [amazed] Seventeen hundred rupees? Easy. They'll pay you back."
+  },
+  {
+    "id": "sad",
+    "tag": "disappointed",
+    "text": "Three weeks later... you're still waiting. And now it's awkward to ask."
+  },
+  {
+    "id": "honest",
+    "text": "Let's be honest."
+  },
+  {
+    "id": "d1",
+    "text": "Calculators don't know who ate what."
+  },
+  {
+    "id": "d2",
+    "text": "Group-chat screenshots get buried."
+  },
+  {
+    "id": "d3",
+    "text": "And nobody wants to be the friend who asks for money."
+  },
+  {
+    "id": "turn",
+    "text": "It's time to change."
+  },
+  {
+    "id": "reveal",
+    "text": "Meet Split-Up. Bill splitting, the Nepali way."
+  },
+  {
+    "id": "items",
+    "text": "Add the bill item by item, and tag who had what."
+  },
+  {
+    "id": "vat",
+    "text": "Service charge and VAT? Shared out fairly, down to the paisa."
+  },
+  {
+    "id": "modes",
+    "text": "Or split it equally, by shares, or by percentage."
+  },
+  {
+    "id": "live",
+    "text": "Everyone sees it live, and debts simplify to the fewest payments."
+  },
+  {
+    "id": "settle",
+    "text": "Settle up with eSewa, Khalti or Fonepay, in a tap."
+  },
+  {
+    "id": "friends",
+    "text": "Add friends with one QR scan. In English, or in Nepali."
+  },
+  {
+    "id": "result",
+    "text": "No chasing. No awkward texts. Just friends, square again."
+  },
+  {
+    "id": "cta",
+    "text": "Eat together. Split fairly. Stay friends. Split-Up is free, at splitup dot thimitech dot com."
+  }
+]
