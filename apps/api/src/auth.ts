@@ -7,7 +7,7 @@ import { createRemoteJWKSet, jwtVerify } from 'jose';
 import nodemailer from 'nodemailer';
 import { z } from 'zod';
 import { and, eq, gt } from 'drizzle-orm';
-import { profileInput } from '@splitup/shared';
+import { REFERRAL_DAYS, creditsOf, profileInput } from '@splitup/shared';
 import { db } from './db';
 import { users, sessions, otps } from './schema';
 
@@ -25,8 +25,14 @@ export async function parse<T extends z.ZodType>(c: Context, schema: T): Promise
   return r.data;
 }
 
+/** A new account can still enter a friend's invite code. */
+export const canRedeem = (u: User) => !u.referredBy && +(u.joinedAt ?? u.createdAt) > Date.now() - REFERRAL_DAYS * 864e5;
+
 /** The logged-in user as they see themselves. */
-export const self = ({ googleSub, inviteToken, passwordHash, ...u }: User) => ({ ...u, hasPassword: !!passwordHash });
+export function self(user: User) {
+  const { googleSub, inviteToken, passwordHash, aiUsed, aiPeriod, aiBonus, ...u } = user;
+  return { ...u, hasPassword: !!passwordHash, aiCredits: creditsOf(user), canRedeem: canRedeem(user) };
+}
 
 const scryptAsync = promisify(scrypt) as (pw: string, salt: string, len: number) => Promise<Buffer>;
 export const hashPassword = async (pw: string) => {
@@ -93,13 +99,16 @@ async function userForEmail(email: string, name?: string, googleSub?: string) {
     const isNew = !existing.registered;
     if (isNew || (googleSub && !existing.googleSub)) {
       const [u] = await db.update(users)
-        .set({ registered: true, googleSub: existing.googleSub ?? googleSub, name: isNew && name ? name : existing.name })
+        .set({
+          registered: true, googleSub: existing.googleSub ?? googleSub, name: isNew && name ? name : existing.name,
+          ...(isNew && { joinedAt: new Date() }),
+        })
         .where(eq(users.id, existing.id)).returning();
       return { user: u, isNew };
     }
     return { user: existing, isNew };
   }
-  const [u] = await db.insert(users).values({ email, name: name || email.split('@')[0], googleSub, registered: true }).returning();
+  const [u] = await db.insert(users).values({ email, name: name || email.split('@')[0], googleSub, registered: true, joinedAt: new Date() }).returning();
   return { user: u, isNew: true };
 }
 
@@ -124,6 +133,16 @@ export async function assignFriendCode(u: User, replace = false): Promise<User> 
 
 const email = z.email().trim().toLowerCase();
 const jwks = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
+const googleId = process.env.GOOGLE_CLIENT_ID, googleSecret = process.env.GOOGLE_CLIENT_SECRET;
+const verifyGoogle = (idToken: string) =>
+  jwtVerify(idToken, jwks, { audience: googleId, issuer: ['https://accounts.google.com', 'accounts.google.com'] }).then((r) => r.payload);
+
+/** Where Google sends people back. APP_URL wins; otherwise the host they came in on (nginx and Vite pass it through). */
+const googleRedirect = (c: Context) =>
+  `${process.env.APP_URL?.replace(/\/$/, '') ?? `${c.req.header('x-forwarded-proto')?.split(',')[0].trim() ?? new URL(c.req.url).protocol.slice(0, -1)}://${c.req.header('host')}`}/api/auth/google/callback`;
+/** Only same-site paths, so the login can't bounce people to another site. */
+const safeNext = (s?: string) => (s && /^\/(?!\/)/.test(s) && !s.startsWith('/api/') ? s : '/');
+const G_COOKIE = { path: '/api/auth/google', httpOnly: true, secure: prod, sameSite: 'Lax' as const };
 
 export const authRoutes = new Hono<Env>()
   .post('/auth/otp/request', async (c) => {
@@ -167,18 +186,57 @@ export const authRoutes = new Hono<Env>()
     if (!u || !(await checkPassword(pw, u.passwordHash))) throw new HTTPException(401, { message: 'Wrong email or password' });
     return c.json({ user: self(u), isNew: false, token: await startSession(c, u.id) });
   })
+  /** Google Identity Services credential (the in-page button, or a mobile app's ID token). */
   .post('/auth/google', async (c) => {
     limit(c, 30, 15 * 60e3);
-    const aud = process.env.GOOGLE_CLIENT_ID;
-    if (!aud) throw new HTTPException(404, { message: 'Google login is not configured' });
+    if (!googleId) throw new HTTPException(404, { message: 'Google login is not configured' });
     const { credential } = await parse(c, z.object({ credential: z.string().min(10) }));
-    const { payload } = await jwtVerify(credential, jwks, { audience: aud, issuer: ['https://accounts.google.com', 'accounts.google.com'] })
-      .catch(() => { throw new HTTPException(401, { message: 'Google sign-in failed' }); });
+    const payload = await verifyGoogle(credential).catch(() => { throw new HTTPException(401, { message: 'Google sign-in failed' }); });
     if (!payload.email || !payload.email_verified) throw new HTTPException(401, { message: 'Google email not verified' });
     const { user, isNew } = await userForEmail(String(payload.email).toLowerCase(), payload.name as string | undefined, payload.sub);
     return c.json({ user: self(user), isNew, token: await startSession(c, user.id) });
   })
-  .get('/config', (c) => c.json({ googleClientId: process.env.GOOGLE_CLIENT_ID ?? null }));
+  /** "Continue with Google", web redirect flow: authorization code + PKCE, state checked against a short-lived cookie. */
+  .get('/auth/google/start', (c) => {
+    limit(c, 30, 15 * 60e3);
+    if (!googleId || !googleSecret) throw new HTTPException(404, { message: 'Google login is not configured' });
+    const state = token(16), verifier = token(32);
+    setCookie(c, 'g_oauth', `${state}.${verifier}.${safeNext(c.req.query('next'))}`, { ...G_COOKIE, maxAge: 600 });
+    const q = new URLSearchParams({
+      client_id: googleId, redirect_uri: googleRedirect(c), response_type: 'code', scope: 'openid email profile', state,
+      code_challenge: createHash('sha256').update(verifier).digest('base64url'), code_challenge_method: 'S256', prompt: 'select_account',
+    });
+    return c.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${q}`);
+  })
+  .get('/auth/google/callback', async (c) => {
+    const [state, verifier, ...rest] = getCookie(c, 'g_oauth')?.split('.') ?? [];
+    deleteCookie(c, 'g_oauth', G_COOKIE);
+    const next = safeNext(rest.join('.'));
+    const { code, error, state: got } = c.req.query();
+    if (error) return c.redirect('/?google=cancelled');
+    if (!googleId || !googleSecret || !state || !verifier || got !== state || !code) return c.redirect('/?google=failed');
+    try {
+      const r = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        body: new URLSearchParams({ code, client_id: googleId, client_secret: googleSecret, redirect_uri: googleRedirect(c), grant_type: 'authorization_code', code_verifier: verifier }),
+      });
+      const tok = (await r.json()) as { id_token?: string; error?: string; error_description?: string };
+      if (!tok.id_token) throw new Error(tok.error_description ?? tok.error ?? `token endpoint ${r.status}`);
+      const payload = await verifyGoogle(tok.id_token);
+      if (!payload.email || !payload.email_verified) return c.redirect('/?google=unverified');
+      const { user } = await userForEmail(String(payload.email).toLowerCase(), payload.name as string | undefined, payload.sub);
+      await startSession(c, user.id);
+      return c.redirect(next);
+    } catch (e) {
+      console.error('Google sign-in failed:', (e as Error).message);
+      return c.redirect('/?google=failed');
+    }
+  })
+  .get('/config', (c) => c.json({
+    googleClientId: googleId || null,
+    googleRedirect: !!(googleId && googleSecret), // prefer the redirect button over the GIS iframe
+    ai: !!process.env.OPENAI_API_KEY,
+  }));
 
 /** Accepts the httpOnly cookie (web) or `Authorization: Bearer` (mobile). */
 export const requireUser: MiddlewareHandler<Env> = async (c, next) => {

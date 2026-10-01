@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Copy } from 'lucide-react';
 import { PAY_METHODS, toPaisa } from '@splitup/shared';
 import { api, refresh, type GroupDetail, type Part } from '../api';
-import { money, usePrefs, useT, today } from '../i18n';
+import { cur, money, usePrefs, useT, today } from '../i18n';
 import { openSettle, useDash, usePeople, useSettleModal, type SettleCtx } from '../store';
 import { Avatar, BalanceLine, Button, Empty, Field, Input, Modal, cx, toast, toastError } from '../ui';
 import { METHOD_LABEL } from './Rows';
@@ -94,7 +94,7 @@ function Form({ ctx }: { ctx: SettleCtx }) {
       </div>
 
       <div className="flex items-center gap-2 rounded-3xl border border-line bg-surface px-5 py-3 focus-within:border-ink">
-        <span className="font-display text-3xl font-bold text-muted">रु</span>
+        <span className="font-display text-3xl font-bold text-muted">{cur(lang)}</span>
         <input inputMode="decimal" autoFocus value={amountStr} onChange={(e) => setAmountStr(e.target.value.replace(/[^\d.]/g, ''))}
           className="w-full bg-transparent font-display text-4xl font-extrabold tabular-nums outline-none focus-visible:outline-none" aria-label={t('Amount')} />
       </div>

@@ -103,6 +103,7 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
     <dialog
       ref={ref}
       onClose={onClose}
+      onCancel={(e) => { e.preventDefault(); onClose(); }} // Esc goes through onClose too, so a modal can ask first
       onClick={(e) => e.target === ref.current && onClose()}
       className={cx('m-0 mt-auto w-full max-w-none max-h-[92dvh] rounded-t-3xl bg-bg p-0 md:m-auto md:rounded-3xl md:max-h-[88dvh]', wide ? 'md:max-w-2xl' : 'md:max-w-lg')}
     >
@@ -144,7 +145,7 @@ export function Money({ amount, className }: { amount: number; className?: strin
   return <span className={cx('font-semibold tabular-nums', amount > 0 ? 'text-owed' : amount < 0 ? 'text-owe' : 'text-muted', className)}>{money(amount, lang)}</span>;
 }
 
-/** "owes you रु 500" / "you owe रु 500" / "settled up" */
+/** "owes you Rs 500" / "you owe Rs 500" / "settled up" */
 export function BalanceLine({ amount, className }: { amount: number; className?: string }) {
   const t = useT();
   if (!amount) return <span className={cx('text-sm text-muted', className)}>{t('settled up')}</span>;

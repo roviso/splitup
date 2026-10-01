@@ -9,9 +9,10 @@
   "scripts": {
     "dev": "concurrently -k -n api,web -c blue,magenta \"npm run dev -w apps/api\" \"npm run dev -w apps/web\"",
     "db": "docker compose -f docker-compose.dev.yml up -d",
-    "test": "tsx --test packages/shared/src/split.test.ts packages/shared/src/contacts.test.ts",
+    "test": "tsx --test packages/shared/src/split.test.ts packages/shared/src/contacts.test.ts packages/shared/src/ai.test.ts",
     "typecheck": "tsc -p packages/shared && tsc -p apps/api && tsc -p apps/web",
-    "build": "npm run build -w apps/web && npm run build -w apps/api"
+    "build": "npm run build -w apps/web && npm run build -w apps/api",
+    "deploy": "bash scripts/deploy.sh"
   },
   "devDependencies": {
     "@types/node": "^26.6.3",

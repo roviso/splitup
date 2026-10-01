@@ -14,7 +14,7 @@ const ICON: Record<string, string> = {
   friend_added: '🤝', group_added: '🏔️', group_joined: '👋', group_removed: '🚪', group_deleted: '🗑️',
   expense_added: '🧾', expense_updated: '✏️', expense_deleted: '🗑️', expense_restored: '♻️',
   settlement: '💸', settlement_confirmed: '✅', settlement_deleted: '↩️', reminder: '🔔',
-  invite_claimed: '🎉', account_linked: '🔗',
+  invite_claimed: '🎉', account_linked: '🔗', referral_joined: '🎁',
 };
 
 /** One line of text for a notification, plus an optional money detail. */
@@ -44,6 +44,7 @@ export function useNoticeText() {
       case 'settlement_deleted': text = t('{who} deleted a payment of {amount}', v); break;
       case 'reminder': text = t('{who} nudged you: you owe {amount}', v); break;
       case 'invite_claimed': text = t('{who} joined Split-Up and linked “{name}”', v); break;
+      case 'referral_joined': text = d.credits ? t('{who} joined Split-Up with your invite. You got {n} AI credits 🎉', { who: actor, n: d.credits }) : t('{who} joined Split-Up with your invite', v); break;
       case 'account_linked': text = t('{who} linked “{name}” to your account. Your shared history is here now.', v); break;
       default: text = actor;
     }

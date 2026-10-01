@@ -19,6 +19,12 @@ const KEYWORDS: [Category, RegExp][] = [
 ];
 export const guessCategory = (text: string): Category | undefined => KEYWORDS.find(([, re]) => re.test(text))?.[0];
 
+/** AI credits: 1 credit = 1 bill (scan or chat, follow-ups on it included). */
+export const AI_FREE_MONTHLY = 5; // renews on the 1st of each month, Nepal time
+export const REFERRAL_BONUS = 5; // for the person who invited, and for the new user; never expires
+export const REFERRAL_DAYS = 7; // a new account can enter an invite code this long after joining
+export const REFERRAL_REWARDS_PER_MONTH = 20; // cap on what one inviter earns, against fake sign-ups
+
 export const SPLIT_TYPES = ['equal', 'exact', 'percent', 'shares', 'itemized'] as const;
 export const PAY_METHODS = ['cash', 'esewa', 'khalti', 'fonepay', 'bank', 'other'] as const;
 export const GROUP_TYPES = ['trip', 'home', 'couple', 'food', 'office', 'other'] as const;

@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Camera, Plus, Sparkles, X } from 'lucide-react';
 import {
   CATEGORIES, guessCategory, splitEqual, splitItemized, splitPercent, splitShares, sum, toPaisa, type Category, type Portion,
 } from '@splitup/shared';
 import { api, refresh } from '../api';
-import { date, money, usePrefs, useT, today } from '../i18n';
-import { openExpense, useDash, useExpenseModal, usePeople, type ExpenseCtx } from '../store';
+import { amount, cur, date, money, usePrefs, usesBs, useT, today } from '../i18n';
+import { openExpense, useConfig, useDash, useExpenseModal, usePeople, type ExpenseCtx } from '../store';
+import { openAi, snapBill, type AiCtx } from '../ai';
+import { useAiGate } from './Credits';
 import { Avatar, Button, Input, Modal, Segmented, cx, inputCls, toast, toastError } from '../ui';
 import PersonPicker from './PersonPicker';
 
@@ -29,6 +31,8 @@ function Form({ ctx }: { ctx: ExpenseCtx }) {
   const prefs = usePrefs();
   const { lang } = prefs;
   const dash = useDash().data;
+  const ai = useConfig().data?.ai;
+  const gate = useAiGate();
   const { name, full, me } = usePeople();
   const e = ctx.expense;
   const m = (e?.meta ?? {}) as Record<string, any>;
@@ -133,8 +137,18 @@ function Form({ ctx }: { ctx: ExpenseCtx }) {
   );
   const small = cx(inputCls, 'h-9 w-24 text-right');
 
+  const toAi = (f: (c: AiCtx) => void) => gate(() => { const c = { groupId: ctx.groupId, friendId: ctx.friendId }; openExpense(null); f(c); });
+
   return (
     <form onSubmit={submit} className="space-y-5">
+      {!e && ai && (
+        <div className="flex items-center gap-2 rounded-2xl bg-marigold-soft py-1.5 pl-3 pr-1.5 text-sm">
+          <Sparkles size={16} className="shrink-0 text-marigold" />
+          <span className="min-w-0 flex-1 font-medium">{t('Let AI fill it in')}</span>
+          <Button type="button" size="sm" onClick={() => toAi(snapBill)}><Camera size={14} /> {t('Scan bill')}</Button>
+          <Button type="button" size="sm" variant="ghost" onClick={() => toAi(openAi)}>{t('Describe')}</Button>
+        </div>
+      )}
       {/* who */}
       {fixed ? (
         <p className="text-sm text-muted">
@@ -174,9 +188,9 @@ function Form({ ctx }: { ctx: ExpenseCtx }) {
 
       {/* how much */}
       <div className="flex items-center gap-2 rounded-3xl border border-line bg-surface px-5 py-3 focus-within:border-ink">
-        <span className="font-display text-3xl font-bold text-muted">रु</span>
+        <span className="font-display text-3xl font-bold text-muted">{cur(lang)}</span>
         {splitType === 'itemized' ? (
-          <span className="font-display text-4xl font-extrabold tabular-nums">{money(total, lang).replace('रु ', '')}</span>
+          <span className="font-display text-4xl font-extrabold tabular-nums">{amount(total, lang)}</span>
         ) : (
           <input inputMode="decimal" value={amountStr} onChange={(x) => setAmountStr(x.target.value.replace(/[^\d.]/g, ''))} placeholder="0"
             className="w-full bg-transparent font-display text-4xl font-extrabold tabular-nums outline-none focus-visible:outline-none" aria-label={t('Amount')} />
@@ -243,7 +257,7 @@ function Form({ ctx }: { ctx: ExpenseCtx }) {
               <div key={i} className="space-y-2 rounded-3xl border border-line bg-surface p-3">
                 <div className="flex gap-2">
                   <Input placeholder={t('Item, e.g. Buff momo')} value={it.name} onChange={(x) => setItems(items.map((r, j) => (j === i ? { ...r, name: x.target.value } : r)))} />
-                  <input className={cx(inputCls, 'w-28 text-right')} inputMode="decimal" placeholder="रु 0" value={it.price}
+                  <input className={cx(inputCls, 'w-28 text-right')} inputMode="decimal" placeholder={`${cur(lang)} 0`} value={it.price}
                     onChange={(x) => setItems(items.map((r, j) => (j === i ? { ...r, price: x.target.value.replace(/[^\d.]/g, '') } : r)))} />
                   <button type="button" onClick={() => setItems(items.filter((_, j) => j !== i))} className="grid size-11 shrink-0 place-items-center rounded-xl text-muted hover:bg-owe-soft hover:text-owe cursor-pointer" aria-label={t('Remove item')}><X size={18} /></button>
                 </div>
@@ -289,7 +303,7 @@ function Form({ ctx }: { ctx: ExpenseCtx }) {
         <label className="space-y-1">
           <span className="text-sm font-medium text-muted">{t('Date')}</span>
           <Input type="date" value={day} max={today()} onChange={(x) => setDay(x.target.value)} required />
-          {prefs.cal === 'bs' && day && <span className="block text-xs text-muted">{date(day, prefs)}</span>}
+          {usesBs(prefs) && day && <span className="block text-xs text-muted">{date(day, prefs)}</span>}
         </label>
         <label className="space-y-1">
           <span className="text-sm font-medium text-muted">{t('Notes')}</span>
@@ -297,7 +311,7 @@ function Form({ ctx }: { ctx: ExpenseCtx }) {
         </label>
       </div>
 
-      <div className="sticky bottom-0 -mx-5 -mb-5 space-y-2 border-t border-line bg-bg px-5 py-4">
+      <div className="sticky -bottom-5 -mx-5 -mb-5 space-y-2 border-t border-line bg-bg px-5 py-4">
         {err && <p className="text-center text-sm font-medium text-owe">{err}</p>}
         <Button type="submit" size="lg" className="w-full" busy={busy} disabled={!!err}>{e ? t('Save changes') : t('Save expense')}</Button>
       </div>

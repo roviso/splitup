@@ -7,6 +7,7 @@ Split bills with friends, the Nepali way. Web app live at **splitup.thimitech.co
 - **Multiple payers** on one expense, and **debt simplification** so a group settles in the fewest payments.
 - **Settle up with eSewa, Khalti or Fonepay.** Friends see your wallet ID and QR code when they pay you.
 - **English and नेपाली** (Devanagari numerals, lakh grouping), with **B.S. or A.D. dates**.
+- **AI bill scanning and chat:** snap a bill and AI reads the items, service charge and VAT; tap who had what, or just type "Ram had the beer, the rest we shared". 5 free AI bills a month, plus 5 more for every friend you invite.
 - **Easy signup:** email + password (the email is confirmed once with a code), a passwordless email code, or Google. **Import contacts** from your phone (Android Chrome) or a .vcf/.csv file. Invite people by WhatsApp or link; their history links to their account when they join.
 - **Add friends by QR.** Everyone has a personal friend code and QR. Friends scan it with the phone camera or the in-app scanner, or look you up by code or exact email. Adding is mutual and instant, with a celebration on both phones.
 - **Live sync.** Groups, expenses and settle-ups show up on everyone's screen as they happen (server-sent events over Postgres LISTEN/NOTIFY), with pop-down banners and a "For you" inbox.
@@ -44,8 +45,20 @@ With no SMTP settings, sign-up codes **show on screen and in the API terminal** 
 
 ### Google sign-in
 1. Go to [console.cloud.google.com](https://console.cloud.google.com), open **APIs & Services → Credentials**, and choose **Create credentials → OAuth client ID → Web application**.
-2. Under **Authorized JavaScript origins**, add `http://localhost:5173`, `http://localhost:3000` and `https://splitup.thimitech.com`. No redirect URIs are needed.
-3. Put the client ID in `.env` as `GOOGLE_CLIENT_ID=...` and restart. The "Continue with Google" button then appears on the login page.
+2. Under **Authorized redirect URIs**, add `https://splitup.thimitech.com/api/auth/google/callback` and `http://localhost:5173/api/auth/google/callback`.
+3. Put `GOOGLE_CLIENT_ID=...` and `GOOGLE_CLIENT_SECRET=...` in `.env` and restart. A "Continue with Google" button then appears at the top of the login page.
+
+Without a client secret, the app shows Google's own in-page button instead. That one needs **Authorized JavaScript origins** (`https://splitup.thimitech.com`, `http://localhost:5173`) rather than redirect URIs.
+
+### AI: scan a bill, or just say what happened
+Set `OPENAI_API_KEY` in `.env` (optionally `OPENAI_MODEL`, default `gpt-5.5`). Then:
+- **Snap the bill.** The camera button in the "Tell AI what you spent…" bar (Home, groups, friends) or in *Add expense* reads every item, price, service charge and VAT, including B.S.-dated Nepali bills, and checks the result against the printed total.
+- **Tap who had what.** Pick a person, tap their items; shares update live. Or tell the AI: "Bibek had the beer, the rest we shared, Hari paid."
+- **Or just type it.** "hijo Sita sanga momo 900, maile tireko" becomes a ready-to-save expense. English, Nepali and Romanized Nepali all work, and the mic dictates where the browser supports it.
+
+**Credits.** Everyone gets **5 free AI bills a month** (resets on the 1st, Nepal time). One credit covers one bill, including re-scans and chat corrections, and failed requests are refunded. **Invite friends to get more:** your friend code is your invite code, and when someone signs up with it (from your invite link, or typed at sign-up within their first 7 days) you both get **5 bonus credits** that never expire. The numbers live in `packages/shared/src/constants.ts`.
+
+AI bills save as normal itemized (or equal) expenses, so they can be edited like any other. Bill photos and the names of the people on the bill are sent to OpenAI; nothing else leaves the server.
 
 ```bash
 npm test         # split math, itemized VAT and contact parsing

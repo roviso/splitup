@@ -4,11 +4,12 @@ import { streamSSE } from 'hono/streaming';
 import { and, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import {
+  REFERRAL_BONUS, REFERRAL_DAYS, REFERRAL_REWARDS_PER_MONTH,
   balancesFor, expenseInput, friendInput, groupInput, importInput, ledgerDebts, settlementInput, sum, type ExpenseInput,
 } from '@splitup/shared';
 import { db, type Tx } from './db';
 import { expensePayers, expenseShares, expenses, friendships, groupMembers, groups, notifications, settlements, users } from './schema';
-import { limit, normCode, parse, token, type Env, type User } from './auth';
+import { canRedeem, limit, normCode, parse, self, token, type Env, type User } from './auth';
 import { notify, subscribe, sync, type Push } from './events';
 import {
   friendIds, involved, loadExpenses, loadLedger, memberIds, myGroups, pair, people, person, related, visibleExpense, visibleSettlement,
@@ -278,6 +279,38 @@ export const routes = new Hono<Env>()
       await sync([me, u.id]);
     }
     return c.json({ person: person(u), already });
+  })
+  // ---------- invites (referrals) ----------
+  // Your friend code doubles as your invite code. A new account that uses it within its first days gets
+  // REFERRAL_BONUS AI credits, and so does the inviter (up to a monthly cap), and the two become friends.
+  .post('/me/referral', async (c) => {
+    limit(c, 20, 15 * 60e3);
+    const me = c.get('user');
+    const { code } = await parse(c, z.object({ code: z.string().trim().min(4).max(20) }));
+    if (me.referredBy) fail(409, "You've already used an invite code");
+    if (!canRedeem(me)) fail(409, `Invite codes only work in your first ${REFERRAL_DAYS} days`);
+    const [inviter] = await db.select().from(users).where(and(eq(users.friendCode, normCode(code)), eq(users.registered, true)));
+    if (!inviter) fail(404, "That invite code isn't valid");
+    if (inviter.id === me.id) fail(400, "That's your own code. Share it with a friend instead.");
+    const rewarded = await db.transaction(async (tx) => {
+      const [row] = await tx.update(users).set({ referredBy: inviter.id, aiBonus: sql`${users.aiBonus} + ${REFERRAL_BONUS}` })
+        .where(and(eq(users.id, me.id), isNull(users.referredBy))).returning({ id: users.id });
+      if (!row) fail(409, "You've already used an invite code");
+      const [{ n }] = await tx.select({ n: sql<number>`count(*)::int` }).from(users)
+        .where(and(eq(users.referredBy, inviter.id), sql`${users.joinedAt} >= date_trunc('month', now() at time zone 'Asia/Kathmandu') at time zone 'Asia/Kathmandu'`));
+      const ok = n <= REFERRAL_REWARDS_PER_MONTH; // n includes this sign-up
+      if (ok) await tx.update(users).set({ aiBonus: sql`${users.aiBonus} + ${REFERRAL_BONUS}` }).where(eq(users.id, inviter.id));
+      await befriendAll(tx, [me.id, inviter.id]);
+      return ok;
+    });
+    await notify([inviter.id], me.id, 'referral_joined', { credits: rewarded ? REFERRAL_BONUS : 0 });
+    await sync([me.id, inviter.id]);
+    const [u] = await db.select().from(users).where(eq(users.id, me.id));
+    return c.json({ me: self(u), bonus: REFERRAL_BONUS, inviter: person(inviter) });
+  })
+  .get('/me/referrals', async (c) => {
+    const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(users).where(eq(users.referredBy, c.get('user').id));
+    return c.json({ joined: n, bonus: REFERRAL_BONUS });
   })
   .post('/friends/import', async (c) => {
     const { contacts } = await parse(c, importInput);
