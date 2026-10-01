@@ -66,7 +66,12 @@ export default function Login() {
   useEffect(() => {
     const why = new URLSearchParams(location.search).get('google');
     if (!why) return;
-    if (why !== 'cancelled') toast(why === 'unverified' ? t('Your Google email isn’t verified yet') : t('Google sign-in didn’t work. Try again, or use your email.'), true);
+    const msg: Record<string, string> = {
+      unverified: t('Your Google email isn’t verified yet'),
+      suspended: t('This account has been suspended.'),
+      paused: t('New sign-ups are paused right now. Please try again later.'),
+    };
+    if (why !== 'cancelled') toast(msg[why] ?? t('Google sign-in didn’t work. Try again, or use your email.'), true);
     history.replaceState(null, '', location.pathname);
   }, []);
 
@@ -188,7 +193,9 @@ export default function Login() {
             )}
             {step === 'email' && (
               <Field label={t('Email')}>
-                <Input type="email" required autoFocus autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+                {/* Password log-in also takes a username (staff accounts have no email). */}
+                <Input type={tab === 'login' && !viaCode ? 'text' : 'email'} inputMode="email" required autoFocus autoCapitalize="none" spellCheck={false}
+                  autoComplete={tab === 'login' && !viaCode ? 'username' : 'email'} value={email} onChange={(e) => setEmail(e.target.value.trim())} placeholder="you@example.com" />
               </Field>
             )}
             {step === 'email' && tab === 'signup' && (

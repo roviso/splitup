@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
-import { LogOut, QrCode, Sparkles, Trash2 } from 'lucide-react';
+import { LogOut, QrCode, ShieldCheck, Sparkles, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { api, qc, type Me } from '../api';
 import { setPrefs, useT, date, usePrefs, today } from '../i18n';
 import { useMe } from '../store';
@@ -128,6 +129,13 @@ export default function Account() {
       </Card>
 
       <PasswordCard hasPassword={me.hasPassword} />
+
+      {me.role === 'admin' && !me.impersonatedBy && (
+        <Link to="/admin" className="flex items-center gap-3 rounded-3xl bg-ink p-5 text-on-ink transition hover:opacity-90">
+          <ShieldCheck size={22} className="text-marigold" />
+          <span className="flex-1"><b className="block font-display text-lg">{t('Admin console')}</b><span className="text-sm opacity-70">{t('Analytics, users and platform controls')}</span></span>
+        </Link>
+      )}
 
       <Button variant="danger" onClick={logout}><LogOut size={16} /> {t('Log out')}</Button>
     </div>

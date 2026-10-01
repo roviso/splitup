@@ -12,7 +12,10 @@ export const useMeQuery = () => useQuery({
 /** Only used inside the logged-in shell, where `me` is guaranteed. */
 export const useMe = () => useMeQuery().data!;
 export const useDash = () => useQuery({ queryKey: ['dashboard'], queryFn: () => api<Dashboard>('/dashboard') });
-export type Config = { googleClientId: string | null; googleRedirect: boolean; ai: boolean };
+export type Config = {
+  googleClientId: string | null; googleRedirect: boolean; ai: boolean; signups: boolean;
+  announcement: { text: string; tone: 'info' | 'warn' | 'good' } | null;
+};
 export const useConfig = () => useQuery({ queryKey: ['config'], queryFn: () => api<Config>('/config'), staleTime: Infinity });
 
 /** Name lookup across everyone we know about, with "You" for me. */

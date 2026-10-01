@@ -26,6 +26,11 @@ export const users = pgTable('users', {
   aiPeriod: text('ai_period'),
   aiBonus: integer('ai_bonus').notNull().default(0),
   referredBy: uuid('referred_by'), // whose invite code they signed up with
+  role: text('role').notNull().default('user'), // 'user' | 'admin'
+  username: text('username').unique(), // optional login name instead of an email (lowercase); used by staff accounts
+  suspendedAt: ts('suspended_at'), // can't sign in or use the API while set
+  suspendReason: text('suspend_reason'),
+  lastSeenAt: ts('last_seen_at'), // updated at most every few minutes
 }, (t) => [index().on(t.referredBy)]);
 
 /** One AI bill. Its first request costs a credit; follow-ups on the same bill are free, within limits. */
@@ -42,6 +47,37 @@ export const sessions = pgTable('sessions', {
   tokenHash: text('token_hash').primaryKey(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   expiresAt: ts('expires_at').notNull(),
+  createdAt: ts('created_at').notNull().defaultNow(),
+  method: text('method'), // password | code | google | impersonate
+  ip: text('ip'),
+  userAgent: text('user_agent'),
+  impersonatorId: uuid('impersonator_id').references(() => users.id, { onDelete: 'cascade' }), // an admin "viewing as" this user
+}, (t) => [index().on(t.userId)]);
+
+/** One row per user per day they used the app (Nepal time). Drives DAU/WAU/MAU and retention. */
+export const userDays = pgTable('user_days', {
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  day: date('day', { mode: 'string' }).notNull(),
+}, (t) => [primaryKey({ columns: [t.userId, t.day] }), index().on(t.day)]);
+
+/** Things that leave no other trace: sign-ins and every admin action. */
+export const auditLog = pgTable('audit_log', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  at: ts('at').notNull().defaultNow(),
+  actorId: uuid('actor_id').references(() => users.id, { onDelete: 'set null' }),
+  action: text('action').notNull(), // 'login', 'admin.user.suspend', …
+  targetType: text('target_type'), // 'user' | 'group' | 'expense' | 'settlement' | 'settings'
+  targetId: text('target_id'),
+  data: jsonb('data').notNull().default({}),
+  ip: text('ip'),
+}, (t) => [index().on(t.at), index().on(t.actorId), index().on(t.targetId)]);
+
+/** Platform switches admins can flip at runtime (announcement, AI on/off, sign-ups, maintenance). */
+export const appSettings = pgTable('app_settings', {
+  key: text('key').primaryKey(),
+  value: jsonb('value').notNull(),
+  updatedAt: ts('updated_at').notNull().defaultNow(),
+  updatedBy: uuid('updated_by').references(() => users.id, { onDelete: 'set null' }),
 });
 
 export const otps = pgTable('otps', {

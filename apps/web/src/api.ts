@@ -29,6 +29,9 @@ export type Me = {
   locale: 'en' | 'ne'; calendar: 'ad' | 'bs'; esewaId: string | null; khaltiId: string | null; paymentQr: string | null; hasPassword: boolean;
   friendCode: string | null;
   aiCredits: Credits; canRedeem: boolean;
+  role: 'user' | 'admin'; username: string | null;
+  /** Set when an admin is viewing the app as this user. */
+  impersonatedBy: string | null;
 };
 export type Person = {
   id: string; name: string; email: string | null; phone: string | null; registered: boolean;
@@ -65,7 +68,7 @@ export type Notice = {
   id: string; kind: string; actorId: string | null; createdAt: string; readAt?: string | null;
   data: {
     groupId?: string | null; group?: string | null; name?: string; amount?: number; net?: number; description?: string;
-    expenseId?: string; settlementId?: string; from?: string; to?: string; method?: string; credits?: number;
+    expenseId?: string; settlementId?: string; from?: string; to?: string; method?: string; credits?: number; message?: string;
   };
 };
 export type Inbox = { items: Notice[]; unread: number; people: Person[] };

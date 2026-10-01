@@ -7,13 +7,14 @@ import { groupMembers, users } from './schema';
 import { parse, type Env, type User } from './auth';
 import { friendIds, myGroups } from './ledger';
 import { charge, creditsFor, refund } from './credits';
+import { settings } from './platform';
 
 // Bill photos and chat go to OpenAI. The model must read images and support structured outputs.
 const KEY = process.env.OPENAI_API_KEY;
 const MODEL = process.env.OPENAI_MODEL || 'gpt-5.5';
 export const aiEnabled = !!KEY;
 
-const fail = (status: 404 | 422 | 429 | 502, message: string): never => { throw new HTTPException(status, { message }); };
+const fail = (status: 404 | 422 | 429 | 502 | 503, message: string): never => { throw new HTTPException(status, { message }); };
 const BUSY = 'The AI is busy right now. Try again in a moment.';
 
 // ponytail: in-memory per-user hourly cap, like auth's limiter; move to the DB if you run several servers.
@@ -251,6 +252,7 @@ Rules:
 
 /** Run one AI request against the user's credits: a new bill costs one, follow-ups don't, failures are refunded. */
 async function metered<T>(userId: string, session: string | undefined, work: () => Promise<T>) {
+  if (!(await settings()).aiEnabled) fail(503, 'The AI is switched off for a little while. You can still add the bill by hand.');
   const bill = await charge(userId, session);
   try {
     return { ...(await work()), session: bill.session, credits: await creditsFor(userId) };

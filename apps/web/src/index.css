@@ -15,6 +15,12 @@
   --owe: #d9480f;
   --owe-soft: #fce9df;
   --on-ink: #fbf7f0;
+  /* chart series (admin console); order validated for colour-blind separation, light + dark */
+  --s1: #2f6db3;
+  --s2: #d98e04;
+  --s3: #8a4fbf;
+  --s4: #1f8a5b;
+  --grid: #efe8dc;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -32,6 +38,11 @@
     --owe: #ff7a45;
     --owe-soft: #33190f;
     --on-ink: #131210;
+    --s1: #3f80d0;
+    --s2: #c98500;
+    --s3: #9070d8;
+    --s4: #289866;
+    --grid: #2a2622;
     color-scheme: dark;
   }
 }
@@ -50,6 +61,11 @@
   --color-owe: var(--owe);
   --color-owe-soft: var(--owe-soft);
   --color-on-ink: var(--on-ink);
+  --color-s1: var(--s1);
+  --color-s2: var(--s2);
+  --color-s3: var(--s3);
+  --color-s4: var(--s4);
+  --color-grid: var(--grid);
   --font-display: "Bricolage Grotesque", "Anek Devanagari", system-ui, sans-serif;
   --font-sans: "Figtree", "Anek Devanagari", system-ui, sans-serif;
 }
@@ -155,3 +171,8 @@ input[type="number"] { -moz-appearance: textfield; }
 :focus-visible { outline: 2px solid var(--marigold); outline-offset: 2px; }
 /* For a text box inside a pill that already shows focus with its border. Unlayered, like the rule above, so it wins. */
 .no-ring:focus-visible { outline: none; }
+
+/* admin console: refetch keeps the frame, dimmed */
+.refetching { opacity: .55; transition: opacity .2s; }
+@keyframes flash { from { background: var(--marigold-soft); } }
+.flash { animation: flash 2.4s ease-out; }

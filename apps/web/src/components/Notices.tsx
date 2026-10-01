@@ -14,7 +14,7 @@ const ICON: Record<string, string> = {
   friend_added: '🤝', group_added: '🏔️', group_joined: '👋', group_removed: '🚪', group_deleted: '🗑️',
   expense_added: '🧾', expense_updated: '✏️', expense_deleted: '🗑️', expense_restored: '♻️',
   settlement: '💸', settlement_confirmed: '✅', settlement_deleted: '↩️', reminder: '🔔',
-  invite_claimed: '🎉', account_linked: '🔗', referral_joined: '🎁',
+  invite_claimed: '🎉', account_linked: '🔗', referral_joined: '🎁', broadcast: '📣', admin_message: '🛡️',
 };
 
 /** One line of text for a notification, plus an optional money detail. */
@@ -46,6 +46,7 @@ export function useNoticeText() {
       case 'invite_claimed': text = t('{who} joined Split-Up and linked “{name}”', v); break;
       case 'referral_joined': text = d.credits ? t('{who} joined Split-Up with your invite. You got {n} AI credits 🎉', { who: actor, n: d.credits }) : t('{who} joined Split-Up with your invite', v); break;
       case 'account_linked': text = t('{who} linked “{name}” to your account. Your shared history is here now.', v); break;
+      case 'broadcast': case 'admin_message': text = d.message ?? ''; break; // written by the Split-Up team, shown as-is
       default: text = actor;
     }
     const net = d.net ?? 0;
@@ -63,6 +64,7 @@ export function useOpenNotice() {
   const me = useMe();
   return (n: Notice) => {
     const d = n.data;
+    if (n.kind === 'broadcast' || n.kind === 'admin_message') return; // from the team: nothing to open
     if (n.kind === 'reminder' && n.actorId) return openSettle({ groupId: null, from: me.id, to: n.actorId, amount: d.amount });
     if (d.groupId && n.kind !== 'group_deleted' && n.kind !== 'group_removed') return nav(`/groups/${d.groupId}`);
     if (n.actorId) nav(`/friends/${n.actorId}`);

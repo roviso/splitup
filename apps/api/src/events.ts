@@ -9,6 +9,8 @@ export type Push =
 
 const CHANNEL = 'splitup_events';
 const listeners = new Map<string, Set<(p: Push) => void>>();
+/** Who has the app open right now on this process: people, and open streams (tabs/devices). */
+export const liveStats = () => ({ users: [...listeners.keys()], streams: [...listeners.values()].reduce((a, s) => a + s.size, 0) });
 
 export function subscribe(userId: string, fn: (p: Push) => void) {
   const set = listeners.get(userId) ?? new Set();

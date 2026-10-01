@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
-import { NavLink, Navigate, Route, Routes, Link } from 'react-router-dom';
-import { Activity as ActivityIcon, Camera, Home as HomeIcon, Plus, Sparkles, UserRound, Users, Settings } from 'lucide-react';
+import { lazy, Suspense, useEffect } from 'react';
+import { NavLink, Navigate, Route, Routes, Link, useLocation } from 'react-router-dom';
+import { Activity as ActivityIcon, Camera, Home as HomeIcon, Plus, ShieldCheck, Sparkles, UserRound, Users, Settings } from 'lucide-react';
 import { ApiError } from './api';
 import { setPrefs, useT } from './i18n';
 import { useMeQuery, openExpense, useConfig } from './store';
@@ -22,6 +22,10 @@ import SmartSplit from './components/SmartSplit';
 import CreditsSheet, { forgetInvite, openCredits, pendingInvite, redeem } from './components/Credits';
 import { Banners, Celebrate, LivePill, Unread } from './components/Notices';
 import { useLive } from './live';
+import { Announcement, ViewAsBar } from './components/SiteBars';
+
+// Only admins ever load the console's code.
+const AdminApp = lazy(() => import('./admin/AdminApp'));
 
 export function Logo({ className }: { className?: string }) {
   return (
@@ -43,6 +47,7 @@ export default function App() {
   const me = useMeQuery();
   const t = useT();
   const ai = useConfig().data?.ai;
+  const onAdmin = useLocation().pathname.startsWith('/admin');
   useLive(!!me.data);
   useEffect(() => {
     if (me.data) setPrefs({ lang: me.data.locale, cal: me.data.calendar });
@@ -62,6 +67,18 @@ export default function App() {
 
   if (me.isPending) return <Spinner />;
   if (me.error instanceof ApiError && me.error.status === 401) return <><Login /><Toasts /></>;
+  if (me.error instanceof ApiError && me.error.status === 503) {
+    return (
+      <div className="grid min-h-dvh place-items-center p-6 text-center">
+        <div className="max-w-sm space-y-4">
+          <img src="/icon.svg" alt="" className="mx-auto size-16" />
+          <p className="font-display text-2xl font-bold">{t('Back soon 🙏')}</p>
+          <p className="text-muted">{me.error.message}</p>
+          <Button onClick={() => me.refetch()}>{t('Try again')}</Button>
+        </div>
+      </div>
+    );
+  }
   if (me.error) {
     return (
       <div className="grid min-h-dvh place-items-center p-6 text-center">
@@ -73,10 +90,17 @@ export default function App() {
     );
   }
 
+  if (onAdmin && me.data.role === 'admin' && !me.data.impersonatedBy) {
+    return <Suspense fallback={<Spinner />}><AdminApp /><Toasts /></Suspense>;
+  }
+
   const link = ({ isActive }: { isActive: boolean }) =>
     cx('flex items-center gap-3 rounded-2xl px-4 h-11 font-semibold transition', isActive ? 'bg-ink text-on-ink' : 'text-muted hover:bg-surface-2 hover:text-ink');
 
   return (
+    <>
+    <ViewAsBar />
+    <Announcement />
     <div className="md:flex">
       <aside className="hidden md:flex sticky top-0 h-dvh w-64 shrink-0 flex-col border-r border-line bg-surface/60 backdrop-blur">
         <div className="dhaka" />
@@ -94,6 +118,9 @@ export default function App() {
           <nav className="flex flex-col gap-1">
             {NAV.map((n) => <NavLink key={n.to} to={n.to} end={n.to === '/'} className={link}><n.icon size={19} /> {t(n.label)}{n.to === '/activity' && <Unread className="ml-auto" />}</NavLink>)}
             <NavLink to="/account" className={link}><Settings size={19} /> {t('Account')}</NavLink>
+            {me.data.role === 'admin' && !me.data.impersonatedBy && (
+              <NavLink to="/admin" className={link}><ShieldCheck size={19} /> {t('Admin console')}</NavLink>
+            )}
           </nav>
           <LivePill className="mt-auto" />
           <Link to="/account" className="flex items-center gap-3 rounded-2xl p-2 hover:bg-surface-2">
@@ -143,6 +170,7 @@ export default function App() {
       <Banners />
       <Toasts />
     </div>
+    </>
   );
 }
 

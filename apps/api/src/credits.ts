@@ -39,8 +39,8 @@ export async function charge(userId: string, session?: string): Promise<Charge> 
     if (s) return { session: s.id, fresh: null };
   }
   const fresh = await spend(userId);
+  // Old sessions are kept (one small row per bill): the admin console charts AI usage from them.
   const [s] = await db.insert(aiSessions).values({ userId, ...fresh }).returning({ id: aiSessions.id });
-  await db.delete(aiSessions).where(and(eq(aiSessions.userId, userId), lt(aiSessions.createdAt, new Date(Date.now() - 7 * 864e5))));
   return { session: s.id, fresh };
 }
 

@@ -13,6 +13,8 @@ import { authRoutes, meRoutes, requireUser, type Env } from './auth';
 import { routes, publicRoutes } from './routes';
 import { aiRoutes } from './ai';
 import { startEvents } from './events';
+import { adminRoutes } from './admin';
+import { promoteAdminEmails } from './platform';
 
 // Bill photos are the only big uploads; the browser shrinks them to ~1.5 MB first.
 const tooBig = (message: string) => (c: Context) => c.json({ error: message }, 413);
@@ -24,6 +26,7 @@ const api = new Hono<Env>()
   .route('/', publicRoutes)
   .use(requireUser)
   .route('/', meRoutes)
+  .route('/admin', adminRoutes)
   .route('/', aiRoutes)
   .route('/', routes);
 
@@ -50,7 +53,7 @@ if (existsSync(join(web, 'index.html'))) {
 const port = Number(process.env.PORT ?? 3000);
 // SOCKET_PATH: listen on a Unix socket instead (bare-metal behind host nginx).
 const socket = process.env.SOCKET_PATH;
-runMigrations(process.env.MIGRATIONS_DIR ?? 'drizzle').then(startEvents).then(() => {
+runMigrations(process.env.MIGRATIONS_DIR ?? 'drizzle').then(startEvents).then(promoteAdminEmails).then(() => {
   if (!socket) return serve({ fetch: app.fetch, port }, () => console.log(`Split-Up API on http://localhost:${port}`));
   rmSync(socket, { force: true }); // stale socket from a previous run
   createAdaptorServer({ fetch: app.fetch }).listen(socket, () => {

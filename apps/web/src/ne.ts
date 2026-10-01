@@ -228,4 +228,11 @@ export const NE: Record<string, string> = {
   '{who} joined Split-Up with your invite. You got {n} AI credits 🎉': '{who} तपाईंको निमन्त्रणाबाट Split-Up मा जोडिनुभयो। तपाईंले {n} AI क्रेडिट पाउनुभयो 🎉',
   '{who} joined Split-Up with your invite': '{who} तपाईंको निमन्त्रणाबाट Split-Up मा जोडिनुभयो',
   'Dates show in B.S. in Nepali.': 'नेपालीमा मिति बि.सं. मा देखिन्छ।',
+
+  // admin & platform
+  'Admin console': 'एडमिन कन्सोल', 'Analytics, users and platform controls': 'विश्लेषण, प्रयोगकर्ता र प्लेटफर्म नियन्त्रण',
+  'Viewing as {name}. Everything you do happens as them.': '{name} को रूपमा हेर्दै। तपाईंले गर्ने सबै काम उहाँकै नाममा हुन्छ।',
+  'Back to admin': 'एडमिनमा फर्कनुहोस्', 'Back soon 🙏': 'छिट्टै फर्कन्छौं 🙏',
+  'This account has been suspended.': 'यो खाता निलम्बन गरिएको छ।',
+  'New sign-ups are paused right now. Please try again later.': 'अहिले नयाँ खाता खोल्न रोकिएको छ। केही समयपछि फेरि प्रयास गर्नुहोस्।',
 };

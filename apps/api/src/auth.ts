@@ -1,8 +1,7 @@
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
-import { createHash, randomBytes, randomInt, scrypt, timingSafeEqual } from 'node:crypto';
-import { promisify } from 'node:util';
+import { createHash, randomBytes, randomInt } from 'node:crypto';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import nodemailer from 'nodemailer';
 import { z } from 'zod';
@@ -10,9 +9,13 @@ import { and, eq, gt } from 'drizzle-orm';
 import { REFERRAL_DAYS, creditsOf, profileInput } from '@splitup/shared';
 import { db } from './db';
 import { users, sessions, otps } from './schema';
+import { adminEmails, audit, clientIp, settings, touch } from './platform';
+import { checkPassword, hashPassword } from './password';
+export { hashPassword };
 
 export type User = typeof users.$inferSelect;
-export type Env = { Variables: { user: User } };
+/** `impersonator`: the admin behind a "view as" session, if this is one. */
+export type Env = { Variables: { user: User; impersonator: { id: string; name: string } | null } };
 
 export const sha = (s: string) => createHash('sha256').update(s).digest('hex');
 export const token = (bytes = 24) => randomBytes(bytes).toString('base64url');
@@ -29,22 +32,11 @@ export async function parse<T extends z.ZodType>(c: Context, schema: T): Promise
 export const canRedeem = (u: User) => !u.referredBy && +(u.joinedAt ?? u.createdAt) > Date.now() - REFERRAL_DAYS * 864e5;
 
 /** The logged-in user as they see themselves. */
-export function self(user: User) {
-  const { googleSub, inviteToken, passwordHash, aiUsed, aiPeriod, aiBonus, ...u } = user;
-  return { ...u, hasPassword: !!passwordHash, aiCredits: creditsOf(user), canRedeem: canRedeem(user) };
+export function self(user: User, impersonator: { id: string; name: string } | null = null) {
+  const { googleSub, inviteToken, passwordHash, aiUsed, aiPeriod, aiBonus, suspendedAt, suspendReason, lastSeenAt, ...u } = user;
+  return { ...u, hasPassword: !!passwordHash, aiCredits: creditsOf(user), canRedeem: canRedeem(user), impersonatedBy: impersonator?.name ?? null };
 }
 
-const scryptAsync = promisify(scrypt) as (pw: string, salt: string, len: number) => Promise<Buffer>;
-export const hashPassword = async (pw: string) => {
-  const salt = randomBytes(16).toString('hex');
-  return `scrypt$${salt}$${(await scryptAsync(pw, salt, 64)).toString('hex')}`;
-};
-async function checkPassword(pw: string, stored: string | null) {
-  const [, salt, hash] = stored?.split('$') ?? [];
-  if (!salt || !hash) return false;
-  const a = Buffer.from(hash, 'hex'), b = await scryptAsync(pw, salt, 64);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
 const password = z.string().min(8, 'Password needs at least 8 characters').max(200);
 
 // ponytail: in-memory per-IP limiter, fine for one server; move to Redis/DB if you run several.
@@ -84,12 +76,24 @@ async function sendCode(email: string, code: string) {
   });
 }
 
-async function startSession(c: Context, userId: string) {
+const SUSPENDED = 'This account has been suspended. Contact support if you think this is a mistake.';
+export const SID = { httpOnly: true, secure: prod, sameSite: 'Lax' as const, path: '/' };
+export const sessionMeta = (c: Context) => ({ ip: clientIp(c), userAgent: c.req.header('user-agent')?.slice(0, 300) ?? null });
+
+async function startSession(c: Context, user: User, method: 'password' | 'code' | 'google') {
+  if (user.suspendedAt) throw new HTTPException(403, { message: SUSPENDED });
   const t = token(32);
-  await db.insert(sessions).values({ tokenHash: sha(t), userId, expiresAt: new Date(Date.now() + SESSION_DAYS * 864e5) });
-  setCookie(c, 'sid', t, { httpOnly: true, secure: prod, sameSite: 'Lax', path: '/', maxAge: SESSION_DAYS * 86400 });
+  await db.insert(sessions).values({ tokenHash: sha(t), userId: user.id, expiresAt: new Date(Date.now() + SESSION_DAYS * 864e5), method, ...sessionMeta(c) });
+  setCookie(c, 'sid', t, { ...SID, maxAge: SESSION_DAYS * 86400 });
+  await audit(c, user.id, 'login', { type: 'user', id: user.id }, { method });
   return t;
 }
+
+/** New accounts can be paused from the admin console; ADMIN_EMAILS can always get in. */
+async function canSignUp(email: string) {
+  if (!(await settings()).signupsEnabled && !adminEmails.has(email)) throw new HTTPException(403, { message: 'New sign-ups are paused right now. Please try again later.' });
+}
+const roleFor = (email: string) => (adminEmails.has(email) ? { role: 'admin' } : {});
 
 /** Account for a verified email. A placeholder a friend created with this email becomes theirs. */
 async function userForEmail(email: string, name?: string, googleSub?: string) {
@@ -97,18 +101,20 @@ async function userForEmail(email: string, name?: string, googleSub?: string) {
   const existing = found ?? (googleSub ? (await db.select().from(users).where(eq(users.email, email)))[0] : undefined);
   if (existing) {
     const isNew = !existing.registered;
+    if (isNew) await canSignUp(email);
     if (isNew || (googleSub && !existing.googleSub)) {
       const [u] = await db.update(users)
         .set({
           registered: true, googleSub: existing.googleSub ?? googleSub, name: isNew && name ? name : existing.name,
-          ...(isNew && { joinedAt: new Date() }),
+          ...(isNew && { joinedAt: new Date(), ...roleFor(email) }),
         })
         .where(eq(users.id, existing.id)).returning();
       return { user: u, isNew };
     }
     return { user: existing, isNew };
   }
-  const [u] = await db.insert(users).values({ email, name: name || email.split('@')[0], googleSub, registered: true, joinedAt: new Date() }).returning();
+  await canSignUp(email);
+  const [u] = await db.insert(users).values({ email, name: name || email.split('@')[0], googleSub, registered: true, joinedAt: new Date(), ...roleFor(email) }).returning();
   return { user: u, isNew: true };
 }
 
@@ -177,14 +183,15 @@ export const authRoutes = new Hono<Env>()
     await db.delete(otps).where(eq(otps.email, e));
     let { user, isNew } = await userForEmail(e, name);
     if (pw) [user] = await db.update(users).set({ passwordHash: await hashPassword(pw) }).where(eq(users.id, user.id)).returning();
-    return c.json({ user: self(user), isNew: isNew && !name, token: await startSession(c, user.id) });
+    return c.json({ user: self(user), isNew: isNew && !name, token: await startSession(c, user, 'code') });
   })
   .post('/auth/login', async (c) => {
     limit(c, 20, 15 * 60e3);
-    const { email: e, password: pw } = await parse(c, z.object({ email, password: z.string().min(1).max(200) }));
-    const [u] = await db.select().from(users).where(eq(users.email, e));
+    // `email` may also be a username (staff accounts like "admin" have no email).
+    const { email: id, password: pw } = await parse(c, z.object({ email: z.string().trim().toLowerCase().min(1).max(200), password: z.string().min(1).max(200) }));
+    const [u] = await db.select().from(users).where(id.includes('@') ? eq(users.email, id) : eq(users.username, id));
     if (!u || !(await checkPassword(pw, u.passwordHash))) throw new HTTPException(401, { message: 'Wrong email or password' });
-    return c.json({ user: self(u), isNew: false, token: await startSession(c, u.id) });
+    return c.json({ user: self(u), isNew: false, token: await startSession(c, u, 'password') });
   })
   /** Google Identity Services credential (the in-page button, or a mobile app's ID token). */
   .post('/auth/google', async (c) => {
@@ -194,7 +201,7 @@ export const authRoutes = new Hono<Env>()
     const payload = await verifyGoogle(credential).catch(() => { throw new HTTPException(401, { message: 'Google sign-in failed' }); });
     if (!payload.email || !payload.email_verified) throw new HTTPException(401, { message: 'Google email not verified' });
     const { user, isNew } = await userForEmail(String(payload.email).toLowerCase(), payload.name as string | undefined, payload.sub);
-    return c.json({ user: self(user), isNew, token: await startSession(c, user.id) });
+    return c.json({ user: self(user), isNew, token: await startSession(c, user, 'google') });
   })
   /** "Continue with Google", web redirect flow: authorization code + PKCE, state checked against a short-lived cookie. */
   .get('/auth/google/start', (c) => {
@@ -225,32 +232,60 @@ export const authRoutes = new Hono<Env>()
       const payload = await verifyGoogle(tok.id_token);
       if (!payload.email || !payload.email_verified) return c.redirect('/?google=unverified');
       const { user } = await userForEmail(String(payload.email).toLowerCase(), payload.name as string | undefined, payload.sub);
-      await startSession(c, user.id);
+      if (user.suspendedAt) return c.redirect('/?google=suspended');
+      await startSession(c, user, 'google');
       return c.redirect(next);
     } catch (e) {
+      if (e instanceof HTTPException && e.status === 403) return c.redirect('/?google=paused');
       console.error('Google sign-in failed:', (e as Error).message);
       return c.redirect('/?google=failed');
     }
   })
-  .get('/config', (c) => c.json({
-    googleClientId: googleId || null,
-    googleRedirect: !!(googleId && googleSecret), // prefer the redirect button over the GIS iframe
-    ai: !!process.env.OPENAI_API_KEY,
-  }));
+  .get('/config', async (c) => {
+    const s = await settings();
+    return c.json({
+      googleClientId: googleId || null,
+      googleRedirect: !!(googleId && googleSecret), // prefer the redirect button over the GIS iframe
+      ai: !!process.env.OPENAI_API_KEY && s.aiEnabled,
+      announcement: s.announcement.active && s.announcement.text ? s.announcement : null,
+      signups: s.signupsEnabled,
+    });
+  });
+
+const bearer = (c: Context) => c.req.header('authorization')?.replace(/^Bearer /i, '') || getCookie(c, 'sid');
 
 /** Accepts the httpOnly cookie (web) or `Authorization: Bearer` (mobile). */
 export const requireUser: MiddlewareHandler<Env> = async (c, next) => {
-  const t = c.req.header('authorization')?.replace(/^Bearer /i, '') || getCookie(c, 'sid');
+  const t = bearer(c);
   if (t) {
-    const [row] = await db.select({ user: users }).from(sessions).innerJoin(users, eq(users.id, sessions.userId))
+    const [row] = await db.select({ user: users, impersonatorId: sessions.impersonatorId }).from(sessions).innerJoin(users, eq(users.id, sessions.userId))
       .where(and(eq(sessions.tokenHash, sha(t)), gt(sessions.expiresAt, new Date())));
-    if (row) { c.set('user', row.user); return next(); }
+    if (row) {
+      const imp = row.impersonatorId ? (await db.select({ id: users.id, name: users.name }).from(users).where(eq(users.id, row.impersonatorId)))[0] ?? null : null;
+      // An admin viewing as a suspended user still gets in; the user themselves doesn't.
+      if (row.user.suspendedAt && !imp) throw new HTTPException(403, { message: SUSPENDED });
+      if (!imp && row.user.role !== 'admin') {
+        const { maintenance } = await settings();
+        if (maintenance.active) throw new HTTPException(503, { message: maintenance.message });
+      }
+      c.set('user', row.user);
+      c.set('impersonator', imp);
+      if (!imp) touch(row.user.id); // "view as" shouldn't count as the user being active
+      else if (c.req.method !== 'GET') await audit(c, imp.id, 'admin.impersonate.write', { type: 'user', id: row.user.id }, { method: c.req.method, path: c.req.path });
+      return next();
+    }
   }
   throw new HTTPException(401, { message: 'Please log in' });
 };
 
+/** Admin-only routes. A "view as" session is the other user's, so it never passes. */
+export const requireAdmin: MiddlewareHandler<Env> = async (c, next) => {
+  if (c.get('user').role !== 'admin' || c.get('impersonator')) throw new HTTPException(404, { message: 'Not found' });
+  return next();
+};
+
 export const meRoutes = new Hono<Env>()
-  .get('/me', async (c) => c.json(self(await assignFriendCode(c.get('user')))))
+  .get('/me', async (c) => c.json(self(await assignFriendCode(c.get('user')), c.get('impersonator'))))
   .post('/me/code/reset', async (c) => c.json(self(await assignFriendCode(c.get('user'), true))))
   .patch('/me', async (c) => {
     const [u] = await db.update(users).set(await parse(c, profileInput)).where(eq(users.id, c.get('user').id)).returning();
@@ -263,8 +298,21 @@ export const meRoutes = new Hono<Env>()
     return c.json(self(u));
   })
   .post('/auth/logout', async (c) => {
-    const t = c.req.header('authorization')?.replace(/^Bearer /i, '') || getCookie(c, 'sid');
+    const t = bearer(c);
     if (t) await db.delete(sessions).where(eq(sessions.tokenHash, sha(t)));
     deleteCookie(c, 'sid', { path: '/' });
     return c.json({ ok: true });
+  })
+  /** End a "view as" session and put the admin's own session back. */
+  .post('/auth/unimpersonate', async (c) => {
+    const imp = c.get('impersonator');
+    if (!imp) throw new HTTPException(400, { message: 'You are not viewing as someone else' });
+    const t = bearer(c), back = getCookie(c, 'sid_admin');
+    if (t) await db.delete(sessions).where(eq(sessions.tokenHash, sha(t)));
+    deleteCookie(c, 'sid_admin', { path: '/' });
+    const [own] = back ? await db.select().from(sessions).where(and(eq(sessions.tokenHash, sha(back)), eq(sessions.userId, imp.id), gt(sessions.expiresAt, new Date()))) : [];
+    if (own) setCookie(c, 'sid', back!, { ...SID, maxAge: Math.floor((+own.expiresAt - Date.now()) / 1000) });
+    else deleteCookie(c, 'sid', { path: '/' });
+    await audit(c, imp.id, 'admin.impersonate.stop', { type: 'user', id: c.get('user').id });
+    return c.json({ ok: !!own });
   });
