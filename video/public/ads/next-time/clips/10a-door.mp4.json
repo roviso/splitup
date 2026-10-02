@@ -1,0 +1,12 @@
+{
+  "kind": "video",
+  "prompt": "Static low-angle shot from doormat height. The man in the doorway freezes mid-sip, staring down at the puppy. The puppy tilts its head to one side. Shot on 35mm film, natural light, real documentary feel, subtle handheld. Audio: morning birds, a distant temple bell, a small puppy whine. No speech, no music.",
+  "flags": {
+    "image": "public/ads/next-time/key/10a-door.png",
+    "dur": "8",
+    "res": "1080p",
+    "neg": "music, soundtrack, subtitles, captions, on-screen text, watermark, morphing faces, extra fingers, cartoon, CGI, plastic skin, slow motion"
+  },
+  "refs": [],
+  "at": "2026-10-01T16:14:45.293Z"
+}

@@ -1,0 +1,12 @@
+{
+  "kind": "video",
+  "prompt": "Slow push-in on the man at the microphone. He pauses, lowers his eyes, slowly unfolds the sheet of paper and looks down at it for a moment, then looks back up at the audience with a pained, sincere, deadpan expression. Shot on 35mm film, natural light, real documentary feel, subtle handheld. Audio: hall room tone, paper rustling. No speech, no music.",
+  "flags": {
+    "image": "public/ads/next-time/key/03-suresh-mic.png",
+    "dur": "8",
+    "res": "1080p",
+    "neg": "music, soundtrack, subtitles, captions, on-screen text, watermark, morphing faces, extra fingers, cartoon, CGI, plastic skin, slow motion"
+  },
+  "refs": [],
+  "at": "2026-10-01T16:14:45.309Z"
+}

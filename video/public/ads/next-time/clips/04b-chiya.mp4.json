@@ -1,0 +1,12 @@
+{
+  "kind": "video",
+  "prompt": "Handheld street shot. In the background the man with the moustache and Dhaka topi waves cheerfully and walks off into the crowd without looking back. The man with glasses watches him go with a completely blank face, holding two glasses of tea, while the stall owner's open palm waits for payment. Shot on 35mm film, natural light, real documentary feel, subtle handheld. Audio: street traffic, motorbike horns, tea stall clatter. No speech, no music.",
+  "flags": {
+    "image": "public/ads/next-time/key/04b-chiya.png",
+    "dur": "8",
+    "res": "1080p",
+    "neg": "music, soundtrack, subtitles, captions, on-screen text, watermark, morphing faces, extra fingers, cartoon, CGI, plastic skin, slow motion"
+  },
+  "refs": [],
+  "at": "2026-10-01T16:19:16.537Z"
+}

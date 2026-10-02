@@ -1,0 +1,12 @@
+{
+  "kind": "video",
+  "prompt": "Static low-angle close-up. The man stares down, frozen and deadpan, then slowly pulls the small folded paper out of his t-shirt pocket and unfolds it without taking his eyes off the camera. Shot on 35mm film, natural light, real documentary feel, subtle handheld. Audio: morning birds, paper rustle. No speech, no music.",
+  "flags": {
+    "image": "public/ads/next-time/key/10c-suresh.png",
+    "dur": "8",
+    "res": "1080p",
+    "neg": "music, soundtrack, subtitles, captions, on-screen text, watermark, morphing faces, extra fingers, cartoon, CGI, plastic skin, slow motion"
+  },
+  "refs": [],
+  "at": "2026-10-01T16:14:45.271Z"
+}

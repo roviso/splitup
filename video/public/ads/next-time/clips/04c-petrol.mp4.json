@@ -1,0 +1,12 @@
+{
+  "kind": "video",
+  "prompt": "The man in the passenger seat pretends to sleep, then very slowly cracks one eye open to peek at his friend paying outside, then quickly shuts it again and fake-snores. Outside, the friend hands rupee notes to the attendant. Shot on 35mm film, natural light, real documentary feel, subtle handheld. Audio: petrol pump whirr, street traffic, a small fake snore. No speech, no music.",
+  "flags": {
+    "image": "public/ads/next-time/key/04c-petrol.png",
+    "dur": "8",
+    "res": "1080p",
+    "neg": "music, soundtrack, subtitles, captions, on-screen text, watermark, morphing faces, extra fingers, cartoon, CGI, plastic skin, slow motion"
+  },
+  "refs": [],
+  "at": "2026-10-01T16:19:36.582Z"
+}

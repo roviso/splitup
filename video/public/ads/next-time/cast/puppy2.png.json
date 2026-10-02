@@ -1,0 +1,11 @@
+{
+  "kind": "image",
+  "prompt": "Real photo of a small cream-coloured Nepali street puppy with floppy ears sitting on a worn coir doormat outside a wooden door. Its face is light cream all over EXCEPT one striking marking: a thin black band of fur right under its nose, shaped EXACTLY like the man's handlebar moustache in the reference photo — thick in the middle, sweeping out sideways, the two ends curling UP towards its cheeks. The rest of the muzzle and chin are cream, not black. The marking reads instantly as a curled moustache. Big soulful eyes looking up at camera. Shot on 35mm Kodak Portra film, natural morning light, grain, candid documentary realism, no text.",
+  "flags": {
+    "ar": "3:4"
+  },
+  "refs": [
+    "public/ads/next-time/cast/ramesh.png"
+  ],
+  "at": "2026-10-01T16:11:18.556Z"
+}

@@ -1,0 +1,10 @@
+{
+  "kind": "image",
+  "prompt": "A roadside chiya (tea) stall on a Kathmandu street in morning light. The man with glasses from the second reference, wearing a casual navy zip jacket over a grey t-shirt, stands at the counter holding two small glass tumblers of milk tea, looking resigned, while the stall owner's hand reaches out with an open palm for payment. In the background, the man with the big handlebar moustache and Dhaka topi from the first reference is walking away, turned half back, waving cheerfully. Vertical 9:16 still frame from a premium TV commercial, shot on 35mm Kodak Vision3 film, natural available light, muted warm palette, real Kathmandu location, real skin texture, documentary realism, subtle grain. No text, no captions, no logos.",
+  "flags": {},
+  "refs": [
+    "public/ads/next-time/cast/ramesh.png",
+    "public/ads/next-time/cast/suresh.png"
+  ],
+  "at": "2026-10-01T16:13:30.346Z"
+}

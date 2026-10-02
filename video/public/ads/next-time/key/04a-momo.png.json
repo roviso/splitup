@@ -1,0 +1,10 @@
+{
+  "kind": "image",
+  "prompt": "A busy, cosy local momo restaurant in Kathmandu at night. At a small table covered in plates of steamed momos and achar, the man with the big handlebar moustache and Dhaka topi from the first reference photo has just seen a waiter's hand place a small black bill folder on the table; he is patting his shirt pockets with both hands and grinning cheekily straight at camera. The man with glasses from the second reference sits opposite, back partly to camera. Warm tungsten light, steam. Vertical 9:16 still frame from a premium TV commercial, shot on 35mm Kodak Vision3 film, natural available light, muted warm palette, real Kathmandu location, real skin texture, documentary realism, subtle grain. No text, no captions, no logos.",
+  "flags": {},
+  "refs": [
+    "public/ads/next-time/cast/ramesh.png",
+    "public/ads/next-time/cast/suresh.png"
+  ],
+  "at": "2026-10-01T16:12:27.728Z"
+}

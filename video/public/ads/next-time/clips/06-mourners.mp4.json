@@ -1,0 +1,12 @@
+{
+  "kind": "video",
+  "prompt": "Very slow push-in past the microphone towards the seated mourners. Every one of them, almost in unison, solemnly unfolds a small piece of paper, reads it, and nods gravely. Completely deadpan. Shot on 35mm film, natural light, real documentary feel, subtle handheld. Audio: paper rustling, quiet room tone. No speech, no music.",
+  "flags": {
+    "image": "public/ads/next-time/key/06-mourners.png",
+    "dur": "8",
+    "res": "1080p",
+    "neg": "music, soundtrack, subtitles, captions, on-screen text, watermark, morphing faces, extra fingers, cartoon, CGI, plastic skin, slow motion"
+  },
+  "refs": [],
+  "at": "2026-10-01T16:18:16.454Z"
+}

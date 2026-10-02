@@ -1,0 +1,9 @@
+{
+  "kind": "tts",
+  "prompt": "# AUDIO PROFILE\nA warm, rich, confident baritone TV commercial announcer, classic broadcast style, with a quiet smile in the voice. Neutral South Asian English accent.\n\n## DIRECTOR'S NOTES\n- Unhurried and assured, like a famous ad voice. Never shouty or salesy.\n- A small knowing pause before '...next time', said lightly, almost amused.\n- Leave about one second of silence between the two paragraphs. Do not read notes aloud.\n- Pronounce 'SplitUp' as 'split up', 'eSewa' as 'ee-seh-wah', 'Khalti' as 'khal-tee', 'paisa' as 'pie-sah'.\n\n## TRANSCRIPT\nSplitUp. Snap the bill at the table. Everyone sees exactly what they owe, down to the paisa. Settle up with eSewa or Khalti... before anyone can say... next time.\n\nSplitUp. Settle up in this life.",
+  "flags": {
+    "voice": "Gacrux"
+  },
+  "refs": [],
+  "at": "2026-10-01T16:15:11.793Z"
+}

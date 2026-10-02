@@ -1,0 +1,12 @@
+{
+  "kind": "video",
+  "prompt": "A waiter's hand slides the bill in front of the man in the paper birthday hat. He looks down at it, then slowly turns his head to look at the empty chair beside him, where a cloth napkin flutters down onto the seat. Friends laughing in the background. Shot on 35mm film, natural light, real documentary feel, subtle handheld. Audio: restaurant chatter and laughter. No speech, no music.",
+  "flags": {
+    "image": "public/ads/next-time/key/04d-birthday.png",
+    "dur": "8",
+    "res": "1080p",
+    "neg": "music, soundtrack, subtitles, captions, on-screen text, watermark, morphing faces, extra fingers, cartoon, CGI, plastic skin, slow motion"
+  },
+  "refs": [],
+  "at": "2026-10-01T16:19:56.632Z"
+}

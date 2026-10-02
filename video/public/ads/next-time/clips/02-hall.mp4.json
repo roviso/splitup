@@ -1,0 +1,12 @@
+{
+  "kind": "video",
+  "prompt": "Locked-off wide shot with subtle handheld drift. The man at the microphone stands solemnly, glances down at his folded paper, then up at the mourners. The ceiling fan turns slowly; a woman in the second row dabs her eye with a handkerchief. Shot on 35mm film, natural light, real documentary feel, subtle handheld. Audio: quiet hall ambience, ceiling fan hum, one soft cough. No speech, no music.",
+  "flags": {
+    "image": "public/ads/next-time/key/02-hall.png",
+    "dur": "8",
+    "res": "1080p",
+    "neg": "music, soundtrack, subtitles, captions, on-screen text, watermark, morphing faces, extra fingers, cartoon, CGI, plastic skin, slow motion"
+  },
+  "refs": [],
+  "at": "2026-10-01T16:18:56.502Z"
+}

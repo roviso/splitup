@@ -1,0 +1,12 @@
+{
+  "kind": "video",
+  "prompt": "Warm handheld. The waiter's hand sets the small black bill folder down on the table. The man with the big moustache and Dhaka topi pats his shirt pockets, finds nothing, shrugs, grins broadly and points at his friend, saying cheerfully in a Nepali accent: \"Next time, pakka!\" Shot on 35mm film, natural light, real documentary feel, subtle handheld. Audio: busy restaurant chatter, clinking plates, his one line of dialogue.",
+  "flags": {
+    "image": "public/ads/next-time/key/04a-momo.png",
+    "dur": "8",
+    "res": "1080p",
+    "neg": "music, soundtrack, subtitles, captions, on-screen text, watermark, morphing faces, extra fingers, cartoon, CGI, plastic skin, slow motion"
+  },
+  "refs": [],
+  "at": "2026-10-01T16:17:36.402Z"
+}

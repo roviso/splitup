@@ -1,0 +1,9 @@
+{
+  "kind": "tts",
+  "prompt": "# AUDIO PROFILE\nSuresh, a Nepali man in his early thirties, speaking English with a natural, light Nepali accent. He is giving a eulogy for his best friend at a small memorial gathering.\n\n## DIRECTOR'S NOTES\n- Play it completely straight: quiet, sincere, slightly wounded, close to the microphone. The comedy comes from how seriously he means it. Never wink, never laugh.\n- The first line is precise, like reading an exact figure from a ledger, with a tiny pause after 'Ramesh'.\n- 'Chiya.' 'Petrol to Pokhara.' 'My birthday.' are three flat, tired, separate entries, each with a pause after it.\n- 'Ramesh...' is a long, heavy pause before the rest.\n- Leave about one second of silence between paragraphs. Do not read the paragraph breaks or any notes aloud.\n- Pronounce 'momo' as 'moh-moh', 'chiya' as 'chee-yah', 'Pokhara' as 'POH-kuh-rah'.\n\n## TRANSCRIPT\nMy best friend, Ramesh, died owing me four thousand, three hundred and seventy rupees.\n\nHe was a good man. He'd give you anything. His time. His jokes. His last momo.\n\nJust... never money.\n\nChiya.\n\nPetrol to Pokhara.\n\nMy birthday.\n\nRamesh... there was no next time.\n\nAnd judging by the crowd... I wasn't the only one.",
+  "flags": {
+    "voice": "Enceladus"
+  },
+  "refs": [],
+  "at": "2026-10-01T16:15:11.784Z"
+}
